@@ -206,7 +206,9 @@ Response includes `assets` array. Find the asset with name `checksums.txt`, down
 _(This section is updated as phases are completed. Findings from earlier phases that affect later phases go here.)_
 
 ### From Phase 1
-_(To be filled after Phase 1 review)_
+- `skip_zone` in Format A never resets after "Key Search Terms" h2. This is fine because it's always the last section in current data, but would suppress content if a non-structural h2 appeared after it in a future post.
+- Format B speaker extraction regex (`_NAME_B_RE`) requires exactly two capitalized words at sentence boundaries. Works for all current data but would miss three-word names or names after commas/colons.
+- Bold text in Format A paragraphs is assumed to be speaker names. Non-name bold text would be incorrectly added as a speaker. Current data is consistent but this is a heuristic.
 
 ### From Phase 2
 _(To be filled after Phase 2 review)_
