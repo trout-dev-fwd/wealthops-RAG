@@ -22,24 +22,42 @@ def _make_checksum(data: bytes) -> str:
 
 
 def _make_release_response(db_data: bytes, checksums_text: str | None = None):
-    """Return a fake JSON API response dict and a matching checksums.txt content."""
+    """Return a fake JSON API response (list of releases) and matching checksums.txt."""
     checksum = _make_checksum(db_data)
     if checksums_text is None:
         checksums_text = f"sha256:{checksum}  wealthops.db\n"
 
-    release_json = {
-        "assets": [
-            {
-                "name": "checksums.txt",
-                "browser_download_url": "https://example.com/checksums.txt",
-            },
-            {
-                "name": "wealthops.db",
-                "browser_download_url": "https://example.com/wealthops.db",
-            },
-        ]
-    }
-    return release_json, checksums_text, checksum
+    # The API returns a list; the DB release has a "db-" prefixed tag,
+    # and an App Build release (newer, listed first) has an "app-" tag.
+    releases_json = [
+        {
+            "tag_name": "app-v1.2.0",
+            "assets": [
+                {
+                    "name": "checksums-app.txt",
+                    "browser_download_url": "https://example.com/checksums-app.txt",
+                },
+                {
+                    "name": "wealthops-installer.exe",
+                    "browser_download_url": "https://example.com/wealthops-installer.exe",
+                },
+            ],
+        },
+        {
+            "tag_name": "db-v3.1.0",
+            "assets": [
+                {
+                    "name": "checksums.txt",
+                    "browser_download_url": "https://example.com/checksums.txt",
+                },
+                {
+                    "name": "wealthops.db",
+                    "browser_download_url": "https://example.com/wealthops.db",
+                },
+            ],
+        },
+    ]
+    return releases_json, checksums_text, checksum
 
 
 # ---------------------------------------------------------------------------
@@ -49,13 +67,13 @@ def _make_release_response(db_data: bytes, checksums_text: str | None = None):
 class TestGetLatestReleaseInfo:
     def test_returns_checksum_and_url(self):
         db_data = b"fake db content"
-        release_json, checksums_text, checksum = _make_release_response(db_data)
+        releases_json, checksums_text, checksum = _make_release_response(db_data)
 
         def fake_urlopen(req, timeout=None):
             url = req.full_url if hasattr(req, "full_url") else req
             resp = MagicMock()
             if "releases" in str(url):
-                resp.read.return_value = json.dumps(release_json).encode()
+                resp.read.return_value = json.dumps(releases_json).encode()
             else:
                 resp.read.return_value = checksums_text.encode()
             resp.__enter__ = lambda s: s
@@ -69,6 +87,30 @@ class TestGetLatestReleaseInfo:
         assert result["checksum"] == checksum
         assert result["db_download_url"] == "https://example.com/wealthops.db"
 
+    def test_skips_app_release_picks_db_release(self):
+        """Verify the updater skips app- tagged releases and picks the db- one."""
+        db_data = b"fake db content"
+        releases_json, checksums_text, checksum = _make_release_response(db_data)
+
+        def fake_urlopen(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else req
+            resp = MagicMock()
+            if "releases" in str(url):
+                resp.read.return_value = json.dumps(releases_json).encode()
+            else:
+                resp.read.return_value = checksums_text.encode()
+            resp.__enter__ = lambda s: s
+            resp.__exit__ = MagicMock(return_value=False)
+            return resp
+
+        with patch("app.updater.urllib.request.urlopen", side_effect=fake_urlopen):
+            result = get_latest_release_info("owner/repo")
+
+        assert result is not None
+        # Must pick db- release assets, not app- release assets
+        assert result["db_download_url"] == "https://example.com/wealthops.db"
+        assert result["checksum"] == checksum
+
     def test_returns_none_on_network_error(self):
         import urllib.error
         with patch(
@@ -78,10 +120,21 @@ class TestGetLatestReleaseInfo:
             assert get_latest_release_info("owner/repo") is None
 
     def test_returns_none_when_assets_missing(self):
-        release_json = {"assets": []}
+        releases_json = [{"tag_name": "db-v1.0.0", "assets": []}]
 
         resp = MagicMock()
-        resp.read.return_value = json.dumps(release_json).encode()
+        resp.read.return_value = json.dumps(releases_json).encode()
+        resp.__enter__ = lambda s: s
+        resp.__exit__ = MagicMock(return_value=False)
+
+        with patch("app.updater.urllib.request.urlopen", return_value=resp):
+            assert get_latest_release_info("owner/repo") is None
+
+    def test_returns_none_when_no_db_release(self):
+        releases_json = [{"tag_name": "app-v1.0.0", "assets": []}]
+
+        resp = MagicMock()
+        resp.read.return_value = json.dumps(releases_json).encode()
         resp.__enter__ = lambda s: s
         resp.__exit__ = MagicMock(return_value=False)
 

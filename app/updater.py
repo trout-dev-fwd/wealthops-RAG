@@ -7,15 +7,25 @@ import json
 
 def get_latest_release_info(github_repo: str) -> dict | None:
     """
-    Hit GitHub Releases API for the latest release.
+    Hit GitHub Releases API and find the latest DB release (tag starts with "db-").
     Returns {checksum: str, db_download_url: str} or None on failure.
     """
-    url = f"https://api.github.com/repos/{github_repo}/releases/latest"
+    url = f"https://api.github.com/repos/{github_repo}/releases"
     req = urllib.request.Request(url, headers={"User-Agent": "WealthOps-Updater/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            releases = json.loads(resp.read().decode("utf-8"))
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, json.JSONDecodeError):
+        return None
+
+    # Find the first release whose tag starts with "db-"
+    data = None
+    for release in releases:
+        if release.get("tag_name", "").startswith("db-"):
+            data = release
+            break
+
+    if data is None:
         return None
 
     assets = data.get("assets", [])
