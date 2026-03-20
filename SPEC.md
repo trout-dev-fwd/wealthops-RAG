@@ -214,4 +214,5 @@ _(This section is updated as phases are completed. Findings from earlier phases 
 _(To be filled after Phase 2 review)_
 
 ### From Phase 3
-_(To be filled after Phase 3 review)_
+- FTS5 query sanitization wraps each whitespace-separated token in double quotes to prevent operator interpretation (hyphens as NOT, `*` as prefix, parentheses as grouping). If a future use case needs FTS5 operators (AND, OR, NEAR), the sanitization would need to be made selective.
+- If a streaming error occurs mid-response, the error message gets appended to the partial response already shown. The GUI layer (Phase 4) should handle this by visually separating the error from partial content.
