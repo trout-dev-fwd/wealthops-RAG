@@ -90,26 +90,28 @@ def should_replace_context(old_chunk_ids: set, new_chunk_ids: set) -> bool:
 
 def stream_response(
     api_key: str, request_body: dict
-) -> Generator[str, None, None]:
+) -> Generator[tuple[str, bool], None, None]:
     """
-    Yield text tokens from the Claude streaming API.
-    On error, yields a single human-friendly error message string.
+    Yield (text, is_error) tuples from the Claude streaming API.
+    Normal tokens yield (text, False).
+    If an error occurs (even mid-stream), yields (error_message, True) as the
+    final item so the GUI can render it separately from any partial content.
     """
     client = anthropic.Anthropic(api_key=api_key)
     try:
         with client.messages.stream(**request_body) as stream:
             for text in stream.text_stream:
-                yield text
+                yield text, False
     except anthropic.AuthenticationError:
-        yield ERROR_MESSAGES[401]
+        yield ERROR_MESSAGES[401], True
     except anthropic.PermissionDeniedError:
-        yield ERROR_MESSAGES[403]
+        yield ERROR_MESSAGES[403], True
     except anthropic.RateLimitError:
-        yield ERROR_MESSAGES[429]
+        yield ERROR_MESSAGES[429], True
     except anthropic.APIStatusError as exc:
         status = exc.status_code
-        yield ERROR_MESSAGES.get(status, ERROR_MESSAGES[500])
+        yield ERROR_MESSAGES.get(status, ERROR_MESSAGES[500]), True
     except anthropic.APITimeoutError:
-        yield ERROR_MESSAGES["timeout"]
+        yield ERROR_MESSAGES["timeout"], True
     except anthropic.APIConnectionError:
-        yield ERROR_MESSAGES["connection"]
+        yield ERROR_MESSAGES["connection"], True
