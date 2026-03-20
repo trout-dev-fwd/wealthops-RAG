@@ -276,7 +276,6 @@ class WealthOpsApp:
         self.stop_event = threading.Event()
         self._streaming = False
         self._has_messages = False
-        self._viewing_past_session = False
 
         # GIF animation state
         self._gif_frames: list[tk.PhotoImage] = []
@@ -814,14 +813,6 @@ class WealthOpsApp:
                 self._show_welcome()
             else:
                 self._hide_welcome()
-            # Restore input if we were in read-only mode
-            if self._viewing_past_session:
-                self._viewing_past_session = False
-                self._input_text.config(state="normal", fg="#333333")
-                self._input_text.delete("1.0", "end")
-                self._input_text.insert("1.0", _PLACEHOLDER_INPUT)
-                self._input_text.config(fg="#aaaaaa")
-                self._send_btn.config(state="normal")
         elif view == "history":
             self._history_frame.pack(fill="both", expand=True)
             self._history_list_frame.pack(fill="both", expand=True)
@@ -929,9 +920,7 @@ class WealthOpsApp:
     # Sending messages
     # ------------------------------------------------------------------
 
-    def _on_enter_key(self, event: tk.Event) -> str | None:
-        if event.state & 0x1:  # Shift held → newline
-            return None
+    def _on_enter_key(self, event: tk.Event) -> str:
         self._on_send()
         return "break"
 
@@ -953,7 +942,7 @@ class WealthOpsApp:
         self._on_send()
 
     def _on_send(self) -> None:
-        if self._streaming or self._viewing_past_session:
+        if self._streaming:
             return
 
         raw = self._input_text.get("1.0", "end-1c")
@@ -1094,7 +1083,6 @@ class WealthOpsApp:
         self._current_chunks = []
         self.current_chunk_ids = set()
         self._has_messages = False
-        self._viewing_past_session = False
 
         self._chat_text.config(state="normal")
         self._chat_text.delete("1.0", "end")
