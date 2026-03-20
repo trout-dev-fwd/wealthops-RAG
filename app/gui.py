@@ -24,7 +24,7 @@ from app import chat_store, config as cfg, llm, retriever
 
 EXAMPLE_QUESTIONS = [
     "What tax strategies have been discussed?",
-    "How should I set up bookkeeping for the holding company?",
+    "What topics can you discuss?",
     "What did Christopher say about options trading?",
     "What tools were recommended for tracking investments?",
 ]
