@@ -157,6 +157,47 @@ class TestCreateKnowledgeDb:
         conn.close()
         assert result is None
 
+    def test_update_trigger_reindexes_fts(self, tmp_db):
+        """UPDATE trigger must remove old text and index new text in chunks_fts."""
+        create_knowledge_db(tmp_db)
+        conn = sqlite3.connect(tmp_db)
+
+        conn.execute(
+            "INSERT INTO calls (title, slug) VALUES (?, ?)",
+            ("Call U", "call-u"),
+        )
+        call_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO chunks (call_id, topic_heading, content) VALUES (?, ?, ?)",
+            (call_id, "Old Heading", "Unique old content zebratangerine"),
+        )
+        conn.commit()
+        chunk_id = conn.execute("SELECT id FROM chunks WHERE topic_heading='Old Heading'").fetchone()[0]
+
+        # Confirm old text is in FTS
+        assert conn.execute(
+            "SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH 'zebratangerine'"
+        ).fetchone() is not None
+
+        # Update the chunk
+        conn.execute(
+            "UPDATE chunks SET topic_heading = ?, content = ? WHERE id = ?",
+            ("New Heading", "Unique new content mangoplatypus", chunk_id),
+        )
+        conn.commit()
+
+        # Old text should no longer match
+        assert conn.execute(
+            "SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH 'zebratangerine'"
+        ).fetchone() is None
+
+        # New text should match
+        assert conn.execute(
+            "SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH 'mangoplatypus'"
+        ).fetchone() is not None
+
+        conn.close()
+
     def test_porter_stemming(self, tmp_db):
         """FTS5 porter tokenizer must match stemmed variants."""
         create_knowledge_db(tmp_db)
