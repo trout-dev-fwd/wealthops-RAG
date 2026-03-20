@@ -13,7 +13,7 @@
 - [x] `tests/fixtures/` — sample tiptap JSON for both formats
 - [x] `tests/test_schema.py` — all tests pass
 - [x] `tests/test_parser.py` — all tests pass
-- [ ] Git commit: "Phase 1: Data foundation — schema and tiptap parser"
+- [x] Git commit: "Phase 1: Data foundation — schema and tiptap parser"
 - [ ] **Opus review passed**
 
 ## Phase 2: Pipeline Script
