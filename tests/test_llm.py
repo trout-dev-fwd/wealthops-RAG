@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from app.llm import (
@@ -5,6 +7,7 @@ from app.llm import (
     SYSTEM_PROMPT,
     build_request,
     should_replace_context,
+    stream_response,
 )
 
 
@@ -147,3 +150,96 @@ def test_error_messages_mention_travis():
 
 def test_system_prompt_non_empty():
     assert len(SYSTEM_PROMPT) > 50
+
+
+# ---------------------------------------------------------------------------
+# stream_response
+# ---------------------------------------------------------------------------
+
+DUMMY_REQUEST = {"model": "claude-sonnet-4-20250514", "max_tokens": 10, "messages": []}
+
+
+def _mock_stream(tokens: list[str]):
+    """Return a context-manager mock whose text_stream yields *tokens*."""
+    stream = MagicMock()
+    stream.__enter__ = MagicMock(return_value=stream)
+    stream.__exit__ = MagicMock(return_value=False)
+    stream.text_stream = iter(tokens)
+    return stream
+
+
+def test_stream_response_yields_text_false_tuples():
+    tokens = ["Hello", " world", "!"]
+    with patch("app.llm.anthropic.Anthropic") as MockClient:
+        MockClient.return_value.messages.stream.return_value = _mock_stream(tokens)
+        result = list(stream_response("sk-test", DUMMY_REQUEST))
+    assert result == [("Hello", False), (" world", False), ("!", False)]
+
+
+def test_stream_response_auth_error():
+    import anthropic
+
+    with patch("app.llm.anthropic.Anthropic") as MockClient:
+        MockClient.return_value.messages.stream.side_effect = (
+            anthropic.AuthenticationError(
+                message="invalid key",
+                response=MagicMock(status_code=401),
+                body={},
+            )
+        )
+        result = list(stream_response("sk-bad", DUMMY_REQUEST))
+    assert len(result) == 1
+    text, is_error = result[0]
+    assert is_error is True
+    assert text == ERROR_MESSAGES[401]
+
+
+def test_stream_response_rate_limit_error():
+    import anthropic
+
+    with patch("app.llm.anthropic.Anthropic") as MockClient:
+        MockClient.return_value.messages.stream.side_effect = (
+            anthropic.RateLimitError(
+                message="rate limited",
+                response=MagicMock(status_code=429),
+                body={},
+            )
+        )
+        result = list(stream_response("sk-test", DUMMY_REQUEST))
+    assert len(result) == 1
+    assert result[0] == (ERROR_MESSAGES[429], True)
+
+
+def test_stream_response_connection_error():
+    import anthropic
+
+    with patch("app.llm.anthropic.Anthropic") as MockClient:
+        MockClient.return_value.messages.stream.side_effect = (
+            anthropic.APIConnectionError(request=MagicMock())
+        )
+        result = list(stream_response("sk-test", DUMMY_REQUEST))
+    assert len(result) == 1
+    assert result[0] == (ERROR_MESSAGES["connection"], True)
+
+
+def test_stream_response_mid_stream_error():
+    """Some tokens arrive before the stream raises an exception."""
+    import anthropic
+
+    def _broken_stream():
+        yield "Partial "
+        yield "answer"
+        raise anthropic.APIConnectionError(request=MagicMock())
+
+    stream = MagicMock()
+    stream.__enter__ = MagicMock(return_value=stream)
+    stream.__exit__ = MagicMock(return_value=False)
+    stream.text_stream = _broken_stream()
+
+    with patch("app.llm.anthropic.Anthropic") as MockClient:
+        MockClient.return_value.messages.stream.return_value = stream
+        result = list(stream_response("sk-test", DUMMY_REQUEST))
+
+    assert result[0] == ("Partial ", False)
+    assert result[1] == ("answer", False)
+    assert result[2] == (ERROR_MESSAGES["connection"], True)
