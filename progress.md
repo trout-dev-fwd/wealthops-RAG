@@ -17,21 +17,21 @@
 - [ ] **Opus review passed**
 
 ## Phase 2: Pipeline Script
-- [ ] `pipeline/pipeline.py` — interactive cookie prompt with validation loop
-- [ ] `pipeline/scraper.py` — pagination logic
-- [ ] `pipeline/scraper.py` — cookie validation before scraping (detect login form response)
-- [ ] `pipeline/scraper.py` — mid-scrape auth failure detection and abort
-- [ ] `pipeline/db_builder.py` — incremental processing (skip existing slugs)
-- [ ] `pipeline/db_builder.py` — additive-only constraint (never DELETE)
-- [ ] `pipeline/db_builder.py` — no-op when no new posts (no git operations)
-- [ ] `pipeline/pipeline.py` — `--dry-run` flag support
-- [ ] `pipeline/git_ops.py` — SHA256 checksum generation for checksums.txt
-- [ ] `pipeline/git_ops.py` — git add, commit (descriptive message), push
-- [ ] `.github/workflows/release.yml` — GH Action triggers on wealthops.db change
-- [ ] `tests/test_scraper.py` — all tests pass
-- [ ] `tests/test_db_builder.py` — all tests pass
-- [ ] `tests/test_git_ops.py` — all tests pass
-- [ ] Git commit: "Phase 2: Pipeline script — scraper, builder, git push"
+- [x] `pipeline/pipeline.py` — interactive cookie prompt with validation loop
+- [x] `pipeline/scraper.py` — pagination logic
+- [x] `pipeline/scraper.py` — cookie validation before scraping (detect login form response)
+- [x] `pipeline/scraper.py` — mid-scrape auth failure detection and abort
+- [x] `pipeline/db_builder.py` — incremental processing (skip existing slugs)
+- [x] `pipeline/db_builder.py` — additive-only constraint (never DELETE)
+- [x] `pipeline/db_builder.py` — no-op when no new posts (no git operations)
+- [x] `pipeline/pipeline.py` — `--dry-run` flag support
+- [x] `pipeline/git_ops.py` — SHA256 checksum generation for checksums.txt
+- [x] `pipeline/git_ops.py` — git add, commit (descriptive message), push
+- [x] `.github/workflows/release.yml` — GH Action triggers on wealthops.db change
+- [x] `tests/test_scraper.py` — all tests pass
+- [x] `tests/test_db_builder.py` — all tests pass
+- [x] `tests/test_git_ops.py` — all tests pass
+- [x] Git commit: "Phase 2: Pipeline script — scraper, builder, git push"
 - [ ] **Opus review passed**
 
 ## Phase 3: App Backend

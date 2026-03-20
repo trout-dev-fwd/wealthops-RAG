@@ -1,0 +1,28 @@
+name: Release DB
+
+on:
+  push:
+    branches: [master]
+    paths: [wealthops.db]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get date tag
+        id: tag
+        run: echo "tag=db-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Database Update ${{ steps.tag.outputs.tag }}"
+          files: |
+            wealthops.db
+            checksums.txt
