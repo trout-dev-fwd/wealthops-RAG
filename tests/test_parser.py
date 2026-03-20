@@ -286,6 +286,28 @@ class TestEdgeCases:
         chunks = parse_tiptap_to_chunks(body, "Empty", "http://x.com")
         assert chunks == []
 
+    def test_body_wrapper_unwrapped(self):
+        """API returns tiptap_body with a 'body' wrapper around the doc."""
+        wrapped = {
+            "body": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "heading",
+                        "attrs": {"level": 3},
+                        "content": [{"type": "text", "text": "05:00 Wrapped Topic"}],
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": "(Alice): Alice talks."}],
+                    },
+                ],
+            }
+        }
+        chunks = parse_tiptap_to_chunks(wrapped, "Test", "http://x.com")
+        assert len(chunks) == 1
+        assert chunks[0]["topic_heading"] == "Wrapped Topic"
+
     def test_only_file_nodes(self):
         body = {
             "type": "doc",

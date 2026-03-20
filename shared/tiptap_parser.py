@@ -253,6 +253,10 @@ def parse_tiptap_to_chunks(tiptap_body: dict, call_title: str, call_url: str) ->
             topic_heading (str), content (str),
             speakers (list[str]), timestamps (list[str])
     """
+    # The Circle.so API wraps the tiptap doc in a "body" key; unwrap if present.
+    if "body" in tiptap_body and "content" not in tiptap_body:
+        tiptap_body = tiptap_body["body"]
+
     nodes = tiptap_body.get("content", [])
 
     has_bullet_list = any(n.get("type") == "bulletList" for n in nodes)
