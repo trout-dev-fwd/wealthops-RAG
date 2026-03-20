@@ -42,7 +42,7 @@ Checking for new posts...
 Pushing to GitHub...
   DB size: 2.1 MB
   SHA256: a3f2b8c1...
-  Committed and pushed to main
+  Committed and pushed to master
 
 Done! GitHub Action will create the release automatically.
 ```
@@ -245,13 +245,13 @@ DRY RUN — parsed 3 new posts (26 chunks) but did not save or push.
 
 ### GitHub Action (`.github/workflows/release.yml`)
 
-Triggers on push to main when wealthops.db changes. Creates a release with the DB and checksums.txt as assets.
+Triggers on push to master when wealthops.db changes. Creates a release with the DB and checksums.txt as assets.
 
 ```yaml
 name: Release DB
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: [wealthops.db]
 
 jobs:

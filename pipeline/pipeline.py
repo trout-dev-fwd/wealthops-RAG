@@ -112,7 +112,7 @@ def main():
     write_checksums_file(DB_PATH, CHECKSUMS_PATH)
     n = len(new_posts)
     git_commit_and_push(f"Update DB: {n} new recording{'s' if n != 1 else ''}")
-    print("  Committed and pushed to main")
+    print("  Committed and pushed to master")
 
     print("\nDone! GitHub Action will create the release automatically.")
 
