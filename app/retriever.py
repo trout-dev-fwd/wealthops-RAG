@@ -17,6 +17,23 @@ def sanitize_fts5_query(query: str) -> str:
     return " ".join(f'"{t.replace(chr(34), chr(34) + chr(34))}"' for t in tokens)
 
 
+TOPIC_CATEGORIES = [
+    "Tax strategy & deductions",
+    "Entity structure (LLCs, S-Corps, holding companies)",
+    "Bookkeeping & financial tracking tools",
+    "Options trading",
+    "Portfolio management & asset allocation",
+    "Donor Advised Funds (DAFs) & philanthropy",
+    "Real estate investing",
+    "Legacy statements & family values",
+    "Engaging spouses & children in wealth management",
+    "Retirement accounts (401k, Roth, Solo 401k)",
+    "Insurance & risk management",
+    "Crypto & alternative investments",
+    "Program logistics & schedule",
+]
+
+
 def is_discovery_query(query: str) -> bool:
     """Return True if the query is a meta-question about available topics."""
     q = query.lower()
@@ -27,60 +44,17 @@ def is_discovery_query(query: str) -> bool:
     return False
 
 
-def get_all_topics(db_path: str) -> list[dict]:
-    """Return all unique topic headings grouped by call, sorted by date descending.
-
-    Each dict has keys: topic_heading, call_title, published_at.
-    """
-    try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        try:
-            rows = conn.execute(
-                """
-                SELECT DISTINCT c.topic_heading, calls.title AS call_title,
-                       calls.published_at
-                FROM chunks c
-                JOIN calls ON c.call_id = calls.id
-                ORDER BY calls.published_at DESC, c.topic_heading
-                """
-            ).fetchall()
-            return [dict(row) for row in rows]
-        finally:
-            conn.close()
-    except Exception:
-        return []
-
-
-def format_topic_list(topics: list[dict]) -> str:
-    """Format get_all_topics output as a readable grouped list."""
-    if not topics:
-        return "No topics found in the database."
-
-    from datetime import datetime
-
-    grouped: dict[str, list[str]] = {}
-    order: list[str] = []
-    for t in topics:
-        raw = t["published_at"] or ""
-        try:
-            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-            label = dt.strftime("%B %-d, %Y")
-        except (ValueError, AttributeError):
-            label = t["call_title"]
-        if label not in grouped:
-            grouped[label] = []
-            order.append(label)
-        grouped[label].append(t["topic_heading"])
-
+def format_topic_list() -> str:
+    """Return a formatted list of broad topic categories covered in the recordings."""
     lines = ["Here are the topics covered in the call recordings:\n"]
-    for label in order:
-        lines.append(f"{label}:")
-        for heading in grouped[label]:
-            lines.append(f"  - {heading}")
-        lines.append("")
-
-    return "\n".join(lines).rstrip()
+    for category in TOPIC_CATEGORIES:
+        lines.append(f"  - {category}")
+    lines.append("")
+    lines.append(
+        "Ask me about any of these — I'll find the relevant discussions "
+        "from your call recordings."
+    )
+    return "\n".join(lines)
 
 
 def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:

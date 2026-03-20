@@ -2,8 +2,8 @@ import sqlite3
 import pytest
 
 from app.retriever import (
+    TOPIC_CATEGORIES,
     format_topic_list,
-    get_all_topics,
     is_discovery_query,
     sanitize_fts5_query,
     search_chunks,
@@ -157,38 +157,6 @@ def test_search_query_with_special_chars_does_not_break(test_db):
 # Topic discovery
 # ---------------------------------------------------------------------------
 
-@pytest.fixture
-def multi_call_db(tmp_path):
-    """DB with two calls, each having distinct topics."""
-    db_path = str(tmp_path / "wealthops.db")
-    create_knowledge_db(db_path)
-
-    conn = sqlite3.connect(db_path)
-    conn.execute(
-        "INSERT INTO calls (title, slug, published_at, url) VALUES (?, ?, ?, ?)",
-        ("March 18, 2026 Call", "mar-18-2026", "2026-03-18T10:00:00Z", "https://example.com/mar18"),
-    )
-    call1 = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-    conn.execute(
-        "INSERT INTO calls (title, slug, published_at, url) VALUES (?, ?, ?, ?)",
-        ("March 11, 2026 Call", "mar-11-2026", "2026-03-11T10:00:00Z", "https://example.com/mar11"),
-    )
-    call2 = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-
-    for call_id, heading in [
-        (call1, "Tax Strategies"),
-        (call1, "Real Estate"),
-        (call2, "Bookkeeping Tools"),
-    ]:
-        conn.execute(
-            "INSERT INTO chunks (call_id, topic_heading, content, speakers) VALUES (?, ?, ?, ?)",
-            (call_id, heading, f"Content about {heading}", "[]"),
-        )
-    conn.commit()
-    conn.close()
-    return db_path
-
-
 class TestIsDiscoveryQuery:
     def test_matches_topic_keyword(self):
         assert is_discovery_query("What topics were discussed?") is True
@@ -206,34 +174,16 @@ class TestIsDiscoveryQuery:
         assert is_discovery_query("TOPICS covered") is True
 
 
-class TestGetAllTopics:
-    def test_returns_all_topics(self, multi_call_db):
-        topics = get_all_topics(multi_call_db)
-        headings = [t["topic_heading"] for t in topics]
-        assert "Tax Strategies" in headings
-        assert "Real Estate" in headings
-        assert "Bookkeeping Tools" in headings
-
-    def test_sorted_by_date_descending(self, multi_call_db):
-        topics = get_all_topics(multi_call_db)
-        dates = [t["published_at"] for t in topics]
-        # March 18 topics should come before March 11
-        mar18_idx = next(i for i, d in enumerate(dates) if "03-18" in d)
-        mar11_idx = next(i for i, d in enumerate(dates) if "03-11" in d)
-        assert mar18_idx < mar11_idx
-
-    def test_returns_empty_on_missing_db(self, tmp_path):
-        assert get_all_topics(str(tmp_path / "nope.db")) == []
-
-
 class TestFormatTopicList:
-    def test_formats_grouped_by_date(self, multi_call_db):
-        topics = get_all_topics(multi_call_db)
-        output = format_topic_list(topics)
-        assert "March 18, 2026" in output
-        assert "March 11, 2026" in output
-        assert "- Tax Strategies" in output
-        assert "- Bookkeeping Tools" in output
+    def test_contains_all_categories(self):
+        output = format_topic_list()
+        for category in TOPIC_CATEGORIES:
+            assert f"- {category}" in output
 
-    def test_empty_topics(self):
-        assert "No topics found" in format_topic_list([])
+    def test_contains_header(self):
+        output = format_topic_list()
+        assert "topics covered in the call recordings" in output
+
+    def test_contains_call_to_action(self):
+        output = format_topic_list()
+        assert "Ask me about any of these" in output
