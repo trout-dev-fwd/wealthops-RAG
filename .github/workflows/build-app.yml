@@ -1,0 +1,88 @@
+name: Build App
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "app/**"
+      - "shared/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: wealthops-assistant-windows-x86_64.exe
+            separator: ";"
+          - os: ubuntu-latest
+            artifact: wealthops-assistant-linux-x86_64
+            separator: ":"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install anthropic irc pyinstaller
+
+      - name: Build executable
+        run: >
+          pyinstaller
+          --onefile
+          --windowed
+          --name "WealthOps Assistant"
+          --icon app/assets/icon.ico
+          --add-data "app/assets/dollar.gif${{ matrix.separator }}assets"
+          app/main.py
+
+      - name: Rename artifact
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            mv "dist/WealthOps Assistant.exe" "dist/${{ matrix.artifact }}"
+          else
+            mv "dist/WealthOps Assistant" "dist/${{ matrix.artifact }}"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum wealthops-assistant-* > checksums-app.txt
+
+      - name: Get date tag
+        id: tag
+        run: echo "tag=app-$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "App Build ${{ steps.tag.outputs.tag }}"
+          files: |
+            artifacts/wealthops-assistant-windows-x86_64.exe
+            artifacts/wealthops-assistant-linux-x86_64
+            artifacts/checksums-app.txt
