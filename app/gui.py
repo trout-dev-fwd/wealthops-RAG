@@ -442,10 +442,12 @@ class WealthOpsApp:
         self._input_text.pack(side="left", fill="both", expand=True, pady=2)
         self._input_text.insert("1.0", _PLACEHOLDER_INPUT)
         self._input_text.config(fg="#aaaaaa")
+        self._input_placeholder = True
         self._input_text.bind("<Return>", self._on_enter_key)
         self._input_text.bind("<Shift-Return>", lambda e: None)
         self._input_text.bind("<FocusIn>", self._on_input_focus_in)
         self._input_text.bind("<FocusOut>", self._on_input_focus_out)
+        self._input_text.bind("<Key>", self._on_input_key)
 
         btn_col = tk.Frame(input_outer, bg="#e0e0e0")
         btn_col.pack(side="right", padx=(8, 0))
@@ -780,10 +782,12 @@ class WealthOpsApp:
         self._help_input.pack(side="left", fill="both", expand=True, pady=2)
         self._help_input.insert("1.0", _PLACEHOLDER_HELP)
         self._help_input.config(fg="#aaaaaa")
+        self._help_placeholder = True
         self._help_input.bind("<Return>", self._on_help_enter)
         self._help_input.bind("<Shift-Return>", lambda e: None)
         self._help_input.bind("<FocusIn>", self._on_help_focus_in)
         self._help_input.bind("<FocusOut>", self._on_help_focus_out)
+        self._help_input.bind("<Key>", self._on_help_key)
 
         tk.Button(
             inp_outer,
@@ -924,16 +928,24 @@ class WealthOpsApp:
         self._on_send()
         return "break"
 
-    def _on_input_focus_in(self, _event: tk.Event) -> None:
-        if self._input_text.get("1.0", "end-1c") == _PLACEHOLDER_INPUT:
+    def _clear_input_placeholder(self) -> None:
+        if self._input_placeholder:
             self._input_text.delete("1.0", "end")
             self._input_text.config(fg="#333333")
+            self._input_placeholder = False
+
+    def _on_input_focus_in(self, _event: tk.Event) -> None:
+        self._clear_input_placeholder()
 
     def _on_input_focus_out(self, _event: tk.Event) -> None:
         if not self._input_text.get("1.0", "end-1c").strip():
             self._input_text.delete("1.0", "end")
             self._input_text.insert("1.0", _PLACEHOLDER_INPUT)
             self._input_text.config(fg="#aaaaaa")
+            self._input_placeholder = True
+
+    def _on_input_key(self, _event: tk.Event) -> None:
+        self._clear_input_placeholder()
 
     def _on_example_click(self, question: str) -> None:
         self._input_text.config(state="normal", fg="#333333")
@@ -1107,6 +1119,7 @@ class WealthOpsApp:
         self._input_text.delete("1.0", "end")
         self._input_text.insert("1.0", _PLACEHOLDER_INPUT)
         self._input_text.config(fg="#aaaaaa")
+        self._input_placeholder = True
         self._send_btn.config(state="normal")
         self._stop_btn.pack_forget()
         self._send_btn.pack()
@@ -1329,16 +1342,24 @@ class WealthOpsApp:
         self._do_help_send()
         return "break"
 
-    def _on_help_focus_in(self, _event: tk.Event) -> None:
-        if self._help_input.get("1.0", "end-1c") == _PLACEHOLDER_HELP:
+    def _clear_help_placeholder(self) -> None:
+        if self._help_placeholder:
             self._help_input.delete("1.0", "end")
             self._help_input.config(fg="#333333")
+            self._help_placeholder = False
+
+    def _on_help_focus_in(self, _event: tk.Event) -> None:
+        self._clear_help_placeholder()
 
     def _on_help_focus_out(self, _event: tk.Event) -> None:
         if not self._help_input.get("1.0", "end-1c").strip():
             self._help_input.delete("1.0", "end")
             self._help_input.insert("1.0", _PLACEHOLDER_HELP)
             self._help_input.config(fg="#aaaaaa")
+            self._help_placeholder = True
+
+    def _on_help_key(self, _event: tk.Event) -> None:
+        self._clear_help_placeholder()
 
     def _do_help_send(self) -> None:
         msg = self._help_input.get("1.0", "end-1c").strip()
