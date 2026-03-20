@@ -6,6 +6,7 @@ Usage:
 
 import argparse
 import os
+import readline
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,6 +37,9 @@ def main():
 
     # Cookie validation loop — repeat until a valid cookie is pasted
     session = requests.Session()
+    # Disable readline word-break on semicolons so cookie strings aren't truncated
+    old_delims = readline.get_completer_delims()
+    readline.set_completer_delims("")
     while True:
         print("\nPaste your Circle.so cookie string (from DevTools > Network > cookie header):")
         cookie = input("> ").strip()
@@ -52,6 +56,8 @@ def main():
             break
         else:
             print("  ✗ Cookie expired or invalid. Please paste a fresh cookie string.")
+
+    readline.set_completer_delims(old_delims)
 
     # Scrape all posts
     print("\nScraping Circle.so...")
