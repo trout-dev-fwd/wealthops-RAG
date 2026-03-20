@@ -35,29 +35,29 @@
 - [ ] **Opus review passed**
 
 ## Phase 3: App Backend
-- [ ] `app/config.py` — config creation, loading, directory management
-- [ ] `app/config.py` — missing key handling (returns None, doesn't crash)
-- [ ] `app/updater.py` — GitHub Releases API fetching (latest release)
-- [ ] `app/updater.py` — checksums.txt parsing and comparison
-- [ ] `app/updater.py` — DB download with SHA256 verification
-- [ ] `app/updater.py` — handles: no local DB, outdated DB, matching DB, download failure, no internet
-- [ ] `app/retriever.py` — FTS5 search with JOIN to calls table
-- [ ] `app/retriever.py` — returns empty list on no matches (not error)
-- [ ] `app/llm.py` — request body construction with prompt caching (cache_control on system+context)
-- [ ] `app/llm.py` — follow-up context management (>50% overlap detection)
-- [ ] `app/llm.py` — streaming via client.messages.stream()
-- [ ] `app/llm.py` — error mapping to human-friendly messages (mentioning "Travis")
-- [ ] `app/chat_store.py` — session CRUD (create, list, get messages)
-- [ ] `app/chat_store.py` — message insertion with timestamp
-- [ ] `app/chat_store.py` — session title from first user message (truncated 60 chars)
-- [ ] `app/chat_store.py` — last_message_at updated on each message
-- [ ] All modules have zero GUI dependencies
-- [ ] `tests/test_config.py` — all tests pass
-- [ ] `tests/test_updater.py` — all tests pass
-- [ ] `tests/test_retriever.py` — all tests pass
-- [ ] `tests/test_llm.py` — all tests pass
-- [ ] `tests/test_chat_store.py` — all tests pass
-- [ ] Git commit: "Phase 3: App backend — config, updater, retriever, LLM, chat store"
+- [x] `app/config.py` — config creation, loading, directory management
+- [x] `app/config.py` — missing key handling (returns None, doesn't crash)
+- [x] `app/updater.py` — GitHub Releases API fetching (latest release)
+- [x] `app/updater.py` — checksums.txt parsing and comparison
+- [x] `app/updater.py` — DB download with SHA256 verification
+- [x] `app/updater.py` — handles: no local DB, outdated DB, matching DB, download failure, no internet
+- [x] `app/retriever.py` — FTS5 search with JOIN to calls table
+- [x] `app/retriever.py` — returns empty list on no matches (not error)
+- [x] `app/llm.py` — request body construction with prompt caching (cache_control on system+context)
+- [x] `app/llm.py` — follow-up context management (>50% overlap detection)
+- [x] `app/llm.py` — streaming via client.messages.stream()
+- [x] `app/llm.py` — error mapping to human-friendly messages (mentioning "Travis")
+- [x] `app/chat_store.py` — session CRUD (create, list, get messages)
+- [x] `app/chat_store.py` — message insertion with timestamp
+- [x] `app/chat_store.py` — session title from first user message (truncated 60 chars)
+- [x] `app/chat_store.py` — last_message_at updated on each message
+- [x] All modules have zero GUI dependencies
+- [x] `tests/test_config.py` — all tests pass
+- [x] `tests/test_updater.py` — all tests pass
+- [x] `tests/test_retriever.py` — all tests pass
+- [x] `tests/test_llm.py` — all tests pass
+- [x] `tests/test_chat_store.py` — all tests pass
+- [x] Git commit: "Phase 3: App backend — config, updater, retriever, LLM, chat store"
 - [ ] **Opus review passed**
 
 ## Phase 4: GUI + Integration
