@@ -1292,6 +1292,14 @@ class WealthOpsApp:
         channel = config.get("irc_channel", cfg.IRC_DEFAULTS["irc_channel"])
         nick = config.get("irc_nick", cfg.IRC_DEFAULTS["irc_nick"])
 
+        # Show connecting status immediately
+        self._help_notice_lbl.config(
+            text=f"Connecting to help chat ({server}:{port})...",
+            bg="#fff9e6",
+            fg="#555500",
+        )
+        self._help_notice.config(bg="#fff9e6")
+
         def on_message(sender: str, message: str) -> None:
             self.root.after(0, self._append_help_msg, sender, message)
 
@@ -1301,14 +1309,33 @@ class WealthOpsApp:
             try:
                 client.connect()
                 self._irc_client = client
-            except Exception:
-                self.root.after(0, self._show_irc_fallback)
+                self.root.after(0, self._show_irc_connected)
+            except Exception as exc:
+                import traceback
+                detail = f"{type(exc).__name__}: {exc}"
+                print(f"[IRC] Connection failed to {server}:{port} — {detail}")
+                traceback.print_exc()
+                self.root.after(0, self._show_irc_fallback, detail)
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _show_irc_fallback(self) -> None:
+    def _show_irc_connected(self) -> None:
         self._help_notice_lbl.config(
-            text="Can't connect to help chat right now.",
+            text=(
+                "Connected to help chat. Travis may not see your message "
+                "right away — he'll respond when he's available."
+            ),
+            bg="#e6f9e6",
+            fg="#2d6a2d",
+        )
+        self._help_notice.config(bg="#e6f9e6")
+
+    def _show_irc_fallback(self, detail: str = "") -> None:
+        msg = "Can't connect to help chat right now."
+        if detail:
+            msg += f"\n({detail})"
+        self._help_notice_lbl.config(
+            text=msg,
             bg="#fdecea",
             fg="#c0392b",
         )
