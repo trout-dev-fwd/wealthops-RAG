@@ -1383,22 +1383,42 @@ class WealthOpsApp:
         )
         status_lbl.pack(padx=20)
 
+        save_btn = None  # forward ref for nested closures
+
         def save() -> None:
             new_key = key_var.get().strip()
             if not new_key:
                 status_var.set("Please enter an API key.")
                 return
-            c = cfg.load_config()
-            c["api_key"] = new_key
-            cfg.save_config(c)
-            self.api_key = new_key
-            status_lbl.config(fg="#27ae60")
-            status_var.set("Saved!")
-            dialog.after(1500, dialog.destroy)
+            save_btn.config(state="disabled", text="Validating…")
+            status_lbl.config(fg="#c0392b")
+            status_var.set("")
+
+            def worker():
+                valid = _check_api_key(new_key)
+                self.root.after(0, _on_validate_result, new_key, valid)
+
+            threading.Thread(target=worker, daemon=True).start()
+
+        def _on_validate_result(new_key: str, valid: bool) -> None:
+            if valid:
+                c = cfg.load_config()
+                c["api_key"] = new_key
+                cfg.save_config(c)
+                self.api_key = new_key
+                status_lbl.config(fg="#27ae60")
+                status_var.set("Saved!")
+                dialog.after(1500, dialog.destroy)
+            else:
+                save_btn.config(state="normal", text="Save")
+                status_var.set(
+                    "That key doesn't seem to work. Double-check it "
+                    "and try again, or ask Travis for help."
+                )
 
         btn_row = tk.Frame(dialog)
         btn_row.pack(pady=10)
-        tk.Button(
+        save_btn = tk.Button(
             btn_row,
             text="Save",
             bg="#2c3e50",
@@ -1409,7 +1429,8 @@ class WealthOpsApp:
             pady=6,
             command=save,
             cursor="hand2",
-        ).pack(side="left", padx=8)
+        )
+        save_btn.pack(side="left", padx=8)
         tk.Button(
             btn_row,
             text="Cancel",
