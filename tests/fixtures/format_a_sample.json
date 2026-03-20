@@ -1,0 +1,158 @@
+{
+  "body": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "file",
+        "attrs": {
+          "signed_id": "eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBCTnVlSXdrPSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--fake"
+        }
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [
+          {"type": "text", "text": "Discussion Topics"}
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 3},
+        "content": [
+          {"type": "text", "text": "01:08 Travel Delays and World Baseball Classic"}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "(Christopher Nelson): "},
+          {"type": "text", "text": "Christopher", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " shares his experience of being stuck on a plane for 9 hours in Fort Lauderdale due to storms, eventually arriving at his mother-in-law's house at 2:30 AM. (Greg Nakagawa): "},
+          {"type": "text", "text": "Greg", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " describes a similar travel mishap in Miami where his hotel reservation was canceled; he discovered rooms were unavailable because fans from the Dominican Republic were in town for the World Baseball Classic semifinals."}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": []
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 3},
+        "content": [
+          {"type": "text", "text": "03:43 Philanthropy and Service Trips"}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "(Christopher Nelson): "},
+          {"type": "text", "text": "Christopher", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " discusses his recent service trip to the Dominican Republic, funded through a Donor Advised Fund (DAF), where his family helped build a school room and library to create empathy and connection for his children. (Shawn): "},
+          {"type": "text", "text": "Shawn", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " expresses interest in giving back to his alma mater and is researching if funding startups through a DAF is a viable tax-deductible strategy."}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": []
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 3},
+        "content": [
+          {"type": "text", "text": "22:48 Onboarding the Next Generation"}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "(Arun Shrestha): "},
+          {"type": "text", "text": "Arun", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " shares his goal of moving from passive to active charity work by \"onboarding\" his daughters (ages 23 and 25) into the Family Office to manage their foundation as a generational legacy."}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "(Vivek Mandava): "},
+          {"type": "text", "text": "Vivek", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " discusses the formative impact of family service on children and shares various ways to contribute beyond cash, such as donating time, skills, or resources like refurbished laptops."}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": []
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 3},
+        "content": [
+          {"type": "text", "text": "1:01:41 Bookkeeping Systems and Visibility"}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "(Christopher Nelson): "},
+          {"type": "text", "text": "Christopher", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " describes the \"process pyramid\" anchored in bookkeeping and document management, which allows an executive to make directional decisions rather than just administrative ones."}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "(Chad Pavliska): "},
+          {"type": "text", "text": "Chad", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " and "},
+          {"type": "text", "text": "Affshin", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": " discuss the \"pain points\" of categorizing personal vs. business expenses when using tools like Monarch, especially when children or spouses use shared credit cards."}
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [
+          {"type": "text", "text": "Key Search Terms"}
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "Donor Advised Fund (DAF)", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": ", "},
+          {"type": "text", "text": "Evergreen Strategy", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": ", "},
+          {"type": "text", "text": "Family Board Meeting", "marks": [{"type": "bold"}]},
+          {"type": "text", "text": ", "},
+          {"type": "text", "text": "Bookkeeping", "marks": [{"type": "bold"}]}
+        ]
+      }
+    ]
+  },
+  "_test_metadata": {
+    "source": "March 17, 2026 — constructed from real post structure",
+    "format": "A (h2/h3 headings with paragraphs)",
+    "expected_chunks": 4,
+    "expected_topics": [
+      "Travel Delays and World Baseball Classic",
+      "Philanthropy and Service Trips",
+      "Onboarding the Next Generation",
+      "Bookkeeping Systems and Visibility"
+    ],
+    "expected_speakers_per_chunk": [
+      ["Christopher Nelson", "Greg Nakagawa"],
+      ["Christopher Nelson", "Shawn"],
+      ["Arun Shrestha", "Vivek Mandava"],
+      ["Christopher Nelson", "Chad Pavliska", "Affshin"]
+    ],
+    "notes": [
+      "File node at top should be skipped",
+      "h2 'Discussion Topics' should be skipped (structural)",
+      "h2 'Key Search Terms' and its paragraph should be skipped",
+      "Empty paragraphs between sections should be skipped",
+      "Timestamp prefixes on h3s should be stripped: '01:08 Travel...' -> 'Travel...'",
+      "The h3 '1:01:41 Bookkeeping...' has an hour-format timestamp prefix"
+    ]
+  }
+}
