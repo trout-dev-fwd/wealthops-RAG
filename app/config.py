@@ -6,6 +6,7 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 KNOWLEDGE_DB_PATH = os.path.join(CONFIG_DIR, "wealthops.db")
 CHATS_DB_PATH = os.path.join(CONFIG_DIR, "chats.db")
 GITHUB_REPO = "username/wealthops-rag"
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 IRC_DEFAULTS = {
     "irc_server": "irc.greed.software",

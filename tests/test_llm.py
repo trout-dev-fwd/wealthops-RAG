@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.llm import (
+    DEFAULT_MODEL,
     ERROR_MESSAGES,
     SYSTEM_PROMPT,
     build_request,
@@ -41,7 +42,7 @@ SAMPLE_HISTORY = [
 
 
 def test_build_request_top_level_keys():
-    body = build_request(SAMPLE_CHUNKS, [], "Tell me about taxes")
+    body = build_request(SAMPLE_CHUNKS, [], "Tell me about taxes", model=DEFAULT_MODEL)
     assert "model" in body
     assert "max_tokens" in body
     assert "system" in body
@@ -49,13 +50,13 @@ def test_build_request_top_level_keys():
 
 
 def test_build_request_system_has_two_blocks():
-    body = build_request(SAMPLE_CHUNKS, [], "Tell me about taxes")
+    body = build_request(SAMPLE_CHUNKS, [], "Tell me about taxes", model=DEFAULT_MODEL)
     system = body["system"]
     assert len(system) == 2
 
 
 def test_build_request_cache_control_on_second_block():
-    body = build_request(SAMPLE_CHUNKS, [], "Tell me about taxes")
+    body = build_request(SAMPLE_CHUNKS, [], "Tell me about taxes", model=DEFAULT_MODEL)
     system = body["system"]
     # First block: no cache_control
     assert "cache_control" not in system[0]
@@ -64,26 +65,35 @@ def test_build_request_cache_control_on_second_block():
 
 
 def test_build_request_first_system_block_is_system_prompt():
-    body = build_request(SAMPLE_CHUNKS, [], "question")
+    body = build_request(SAMPLE_CHUNKS, [], "question", model=DEFAULT_MODEL)
     assert body["system"][0]["text"] == SYSTEM_PROMPT
 
 
 def test_build_request_context_block_contains_chunk_data():
-    body = build_request(SAMPLE_CHUNKS, [], "question")
+    body = build_request(SAMPLE_CHUNKS, [], "question", model=DEFAULT_MODEL)
     context_text = body["system"][1]["text"]
-    assert "S-Corp Formation" in context_text
-    assert "Real Estate" in context_text
-    assert "January 16, 2026 Call" in context_text
+    assert "[January 16, 2026 Call] S-Corp Formation" in context_text
+    assert "[February 3, 2026 Call] Real Estate" in context_text
+    assert "Speakers:" in context_text
+
+
+def test_build_request_context_format_is_lean():
+    """Context uses bracket format, not markdown headers."""
+    body = build_request(SAMPLE_CHUNKS, [], "question", model=DEFAULT_MODEL)
+    context_text = body["system"][1]["text"]
+    assert "###" not in context_text
+    assert "**Source:**" not in context_text
+    assert "**Speakers:**" not in context_text
 
 
 def test_build_request_appends_user_query():
-    body = build_request(SAMPLE_CHUNKS, [], "My question here")
+    body = build_request(SAMPLE_CHUNKS, [], "My question here", model=DEFAULT_MODEL)
     messages = body["messages"]
     assert messages[-1] == {"role": "user", "content": "My question here"}
 
 
 def test_build_request_includes_conversation_history():
-    body = build_request(SAMPLE_CHUNKS, SAMPLE_HISTORY, "Follow-up question")
+    body = build_request(SAMPLE_CHUNKS, SAMPLE_HISTORY, "Follow-up question", model=DEFAULT_MODEL)
     messages = body["messages"]
     assert len(messages) == 3
     assert messages[0]["role"] == "user"
@@ -92,9 +102,38 @@ def test_build_request_includes_conversation_history():
 
 
 def test_build_request_empty_chunks():
-    body = build_request([], [], "question")
+    body = build_request([], [], "question", model=DEFAULT_MODEL)
     system = body["system"]
     assert system[1]["cache_control"] == {"type": "ephemeral"}
+
+
+def test_build_request_uses_explicit_model():
+    body = build_request(SAMPLE_CHUNKS, [], "q", model="claude-haiku-4-5-20251001")
+    assert body["model"] == "claude-haiku-4-5-20251001"
+
+
+def test_build_request_defaults_model_from_config():
+    with patch("app.llm.cfg.load_config", return_value={"model": "claude-haiku-4-5-20251001"}):
+        body = build_request(SAMPLE_CHUNKS, [], "q")
+    assert body["model"] == "claude-haiku-4-5-20251001"
+
+
+def test_build_request_speakers_string_passthrough():
+    """When speakers is already a JSON string, it passes through as-is."""
+    body = build_request(SAMPLE_CHUNKS, [], "q", model=DEFAULT_MODEL)
+    context_text = body["system"][1]["text"]
+    assert '["Christopher"]' in context_text
+
+
+def test_build_request_speakers_list_joined():
+    """When speakers is a list, it gets comma-joined."""
+    chunks = [{
+        **SAMPLE_CHUNKS[0],
+        "speakers": ["Christopher", "Greg"],
+    }]
+    body = build_request(chunks, [], "q", model=DEFAULT_MODEL)
+    context_text = body["system"][1]["text"]
+    assert "Christopher, Greg" in context_text
 
 
 # ---------------------------------------------------------------------------

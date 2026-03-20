@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app import config as cfg, chat_store, retriever
-from app.llm import build_request, SYSTEM_PROMPT, should_replace_context
+from app.llm import build_request, DEFAULT_MODEL, SYSTEM_PROMPT, should_replace_context
 from shared.schema import create_chat_db, create_knowledge_db
 
 
@@ -153,9 +153,9 @@ def test_build_request_from_search_results(knowledge_db):
     chunks = retriever.search_chunks(knowledge_db, "S-Corp")
     assert chunks, "No chunks returned for 'S-Corp' — search prerequisite failed"
 
-    body = build_request(chunks, [], "What is an S-Corp?")
+    body = build_request(chunks, [], "What is an S-Corp?", model=DEFAULT_MODEL)
 
-    assert body["model"] == "claude-sonnet-4-20250514"
+    assert body["model"] == DEFAULT_MODEL
     assert body["max_tokens"] == 2048
     assert len(body["system"]) == 2
     assert body["system"][1].get("cache_control") == {"type": "ephemeral"}
@@ -164,10 +164,9 @@ def test_build_request_from_search_results(knowledge_db):
 
 def test_build_request_context_contains_chunk_data(knowledge_db):
     chunks = retriever.search_chunks(knowledge_db, "S-Corp")
-    body = build_request(chunks, [], "Tell me about S-Corps")
+    body = build_request(chunks, [], "Tell me about S-Corps", model=DEFAULT_MODEL)
     context_text = body["system"][1]["text"]
-    assert "S-Corp Formation" in context_text
-    assert "January 16, 2026 Call" in context_text
+    assert "[January 16, 2026 Call] S-Corp Formation" in context_text
 
 
 def test_build_request_includes_history(knowledge_db):
@@ -176,7 +175,7 @@ def test_build_request_includes_history(knowledge_db):
         {"role": "user", "content": "Previous question"},
         {"role": "assistant", "content": "Previous answer"},
     ]
-    body = build_request(chunks, history, "Follow-up question")
+    body = build_request(chunks, history, "Follow-up question", model=DEFAULT_MODEL)
     assert len(body["messages"]) == 3
     assert body["messages"][0]["role"] == "user"
     assert body["messages"][0]["content"] == "Previous question"
@@ -185,7 +184,7 @@ def test_build_request_includes_history(knowledge_db):
 
 def test_build_request_system_prompt_is_present(knowledge_db):
     chunks = retriever.search_chunks(knowledge_db, "tax")
-    body = build_request(chunks, [], "question")
+    body = build_request(chunks, [], "question", model=DEFAULT_MODEL)
     assert body["system"][0]["text"] == SYSTEM_PROMPT
 
 
@@ -263,10 +262,10 @@ def test_full_pipeline_search_to_request(knowledge_db, chats_db):
     chat_store.add_message(chats_db, session_id, "user", user_query)
 
     # Build request
-    request = build_request(chunks, [], user_query)
+    request = build_request(chunks, [], user_query, model=DEFAULT_MODEL)
 
     # Verify request structure (API call mocked)
-    assert request["model"] == "claude-sonnet-4-20250514"
+    assert request["model"] == DEFAULT_MODEL
     system_block = request["system"][1]["text"]
     assert "S-Corp" in system_block or "S-Corp Formation" in system_block
 

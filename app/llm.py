@@ -4,19 +4,30 @@ from typing import Generator
 
 import anthropic
 
-SYSTEM_PROMPT = """You are a helpful assistant for a member of the WealthOps micro family \
-office program. You answer questions based on the call recording summaries provided below \
-as context.
+from app import config as cfg
 
-Rules:
-- Only answer based on what's in the provided context
-- If the context doesn't fully answer the question, say what you can and be honest about \
-what isn't covered
-- Always mention which call recording(s) your answer comes from, like "Christopher talked \
-about this in the January 16th call"
-- Be conversational and clear — explain things the way you would to a friend over dinner
-- If multiple calls cover the same topic, bring them together into one clear answer
-- Avoid jargon unless the source material uses it, and explain it when you do"""
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
+
+SYSTEM_PROMPT = """\
+You are a helpful assistant for a member of the WealthOps micro family office program. \
+The user is learning to manage their wealth independently using the micro family office \
+framework taught in the program. They may not be familiar with all the terminology yet.
+
+You answer questions using ONLY the call recording excerpts provided below. These are \
+summaries of live group calls where members discuss tax strategy, entity structure, \
+portfolio management, bookkeeping, and related topics.
+
+When answering:
+- Synthesize information across multiple excerpts when relevant — don't just list what \
+each call said separately
+- Be conversational and clear, as if explaining to a friend
+- Mention the source naturally, like "In the January 16th call, Christopher explained..." \
+— but don't cite every sentence, just anchor each main point to its source once
+- If the excerpts contain a relevant framework, strategy, or specific recommendation from \
+a speaker, present it clearly rather than hedging
+- If the excerpts genuinely don't address the question, say so briefly and suggest what \
+topic or keywords they might search for instead
+- Explain jargon (S-Corp, DAF, DSCR, 1031 exchange, etc.) briefly when you first use it"""
 
 ERROR_MESSAGES: dict = {
     401: "Your API key doesn't seem to be working. Go to Settings to update it, or ask Travis for help.",
@@ -34,20 +45,27 @@ def build_request(
     context_chunks: list[dict],
     conversation_history: list[dict],
     user_query: str,
+    model: str | None = None,
 ) -> dict:
     """
     Build the full API request body with cache_control on the system+context block.
 
     The second system content block (context) gets cache_control: ephemeral so that
     follow-up questions within 5 minutes reuse the cached prompt.
+
+    *model* defaults to the value in config.json ("model" key), falling back to
+    DEFAULT_MODEL if not configured.
     """
+    if model is None:
+        model = cfg.load_config().get("model", DEFAULT_MODEL)
+
     context_parts = []
     for chunk in context_chunks:
+        speakers = chunk['speakers'] if isinstance(chunk['speakers'], str) else ', '.join(chunk['speakers']) if chunk['speakers'] else 'Unknown'
         context_parts.append(
-            f"### {chunk['topic_heading']}\n"
-            f"**Source:** {chunk['call_title']} ({chunk['call_date']})\n"
-            f"**Speakers:** {chunk['speakers']}\n\n"
-            f"{chunk['content']}\n"
+            f"[{chunk['call_title']}] {chunk['topic_heading']}\n"
+            f"Speakers: {speakers}\n"
+            f"{chunk['content']}"
         )
     context_block = "\n---\n".join(context_parts)
 
@@ -69,7 +87,7 @@ def build_request(
     messages.append({"role": "user", "content": user_query})
 
     return {
-        "model": "claude-sonnet-4-20250514",
+        "model": model,
         "max_tokens": 2048,
         "system": system,
         "messages": messages,
