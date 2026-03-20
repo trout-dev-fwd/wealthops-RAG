@@ -216,3 +216,8 @@ _(To be filled after Phase 2 review)_
 ### From Phase 3
 - FTS5 query sanitization wraps each whitespace-separated token in double quotes to prevent operator interpretation (hyphens as NOT, `*` as prefix, parentheses as grouping). If a future use case needs FTS5 operators (AND, OR, NEAR), the sanitization would need to be made selective.
 - If a streaming error occurs mid-response, the error message gets appended to the partial response already shown. The GUI layer (Phase 4) should handle this by visually separating the error from partial content.
+
+### From Phase 4
+- Stop button breaks the streaming loop but doesn't explicitly close the HTTP connection. The `with` block in `llm.py` closes on GC. Acceptable for v1 single-stream desktop app but could leak connections if Stop is pressed repeatedly.
+- IRC TLS has certificate verification disabled (`check_hostname=False`, `CERT_NONE`). Acceptable for personal server in v1.
+- If IRC connection fails repeatedly, old reactor daemon threads accumulate. They die on app exit. Not worth fixing for v1.
