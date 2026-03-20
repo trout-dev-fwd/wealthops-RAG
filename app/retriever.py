@@ -1,6 +1,22 @@
 import sqlite3
 
 
+def sanitize_fts5_query(query: str) -> str:
+    """Wrap each whitespace-separated token in double quotes to prevent
+    FTS5 operator interpretation.
+
+    FTS5 treats hyphens as NOT, ``*`` as prefix search, and parentheses /
+    AND / OR / NEAR as query operators.  Quoting each token forces literal
+    matching — e.g. ``S-Corp`` becomes ``"S-Corp"`` instead of ``S NOT Corp``.
+
+    Internal double quotes are escaped by doubling them per FTS5 rules.
+    """
+    tokens = query.split()
+    if not tokens:
+        return '""'
+    return " ".join(f'"{t.replace(chr(34), chr(34) + chr(34))}"' for t in tokens)
+
+
 def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:
     """
     Search the FTS5 index for chunks matching the query.
@@ -12,6 +28,7 @@ def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         try:
+            sanitized = sanitize_fts5_query(query)
             rows = conn.execute(
                 """
                 SELECT
@@ -29,7 +46,7 @@ def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:
                 ORDER BY rank
                 LIMIT ?
                 """,
-                (query, limit),
+                (sanitized, limit),
             ).fetchall()
             return [dict(row) for row in rows]
         finally:

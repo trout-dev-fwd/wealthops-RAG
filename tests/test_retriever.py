@@ -1,7 +1,7 @@
 import sqlite3
 import pytest
 
-from app.retriever import search_chunks
+from app.retriever import sanitize_fts5_query, search_chunks
 from shared.schema import create_knowledge_db
 
 
@@ -42,7 +42,6 @@ def test_db(tmp_path):
 
 
 def test_search_returns_matching_chunk(test_db):
-    # Search for a word in the content (avoid hyphens — FTS5 treats '-' as NOT)
     results = search_chunks(test_db, "liability")
     assert len(results) >= 1
     headings = [r["topic_heading"] for r in results]
@@ -96,3 +95,53 @@ def test_search_returns_empty_on_missing_db(tmp_path):
     # Should not raise — just return empty list
     results = search_chunks(str(tmp_path / "nonexistent.db"), "anything")
     assert results == []
+
+
+# ---------------------------------------------------------------------------
+# FTS5 query sanitization
+# ---------------------------------------------------------------------------
+
+def test_sanitize_wraps_tokens_in_quotes():
+    assert sanitize_fts5_query("hello world") == '"hello" "world"'
+
+
+def test_sanitize_preserves_hyphens():
+    assert sanitize_fts5_query("S-Corp") == '"S-Corp"'
+
+
+def test_sanitize_escapes_internal_quotes():
+    result = sanitize_fts5_query('the "best" strategy')
+    # Each token is wrapped in quotes; internal quotes are doubled for FTS5 escaping
+    assert result == '"the" """best""" "strategy"'
+
+
+def test_sanitize_handles_empty_query():
+    assert sanitize_fts5_query("") == '""'
+
+
+def test_sanitize_handles_asterisk():
+    assert sanitize_fts5_query("tax*") == '"tax*"'
+
+
+def test_sanitize_handles_parentheses():
+    assert sanitize_fts5_query("(S-Corp)") == '"(S-Corp)"'
+
+
+def test_search_hyphenated_query_returns_results(test_db):
+    """S-Corp must match -- FTS5 would interpret the hyphen as NOT without sanitization."""
+    results = search_chunks(test_db, "S-Corp")
+    assert len(results) >= 1
+    headings = [r["topic_heading"] for r in results]
+    assert "S-Corp Formation" in headings
+
+
+def test_search_query_with_quotes_does_not_break(test_db):
+    # Should not raise — returns empty list or results, never an error
+    results = search_chunks(test_db, 'the "best" strategy')
+    assert isinstance(results, list)
+
+
+def test_search_query_with_special_chars_does_not_break(test_db):
+    # Parentheses, asterisks, etc. should not cause FTS5 syntax errors
+    results = search_chunks(test_db, "tax* (strategies)")
+    assert isinstance(results, list)
