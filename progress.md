@@ -1,18 +1,18 @@
 # WealthOps RAG Assistant — Progress Tracker
 
 ## Phase 1: Data Foundation
-- [ ] `shared/schema.py` — knowledge DB schema (calls, chunks, chunks_fts, triggers)
-- [ ] `shared/schema.py` — chat history DB schema (sessions, messages)
-- [ ] `shared/schema.py` — idempotent creation (safe to call multiple times)
-- [ ] `shared/tiptap_parser.py` — Format A parser (h2/h3 headings + paragraphs)
-- [ ] `shared/tiptap_parser.py` — Format B parser (bulletList + listItems)
-- [ ] `shared/tiptap_parser.py` — topic_heading extraction (bold text / h3 minus timestamp prefix)
-- [ ] `shared/tiptap_parser.py` — speakers extraction (JSON array)
-- [ ] `shared/tiptap_parser.py` — timestamps extraction (JSON array)
-- [ ] `shared/tiptap_parser.py` — skip logic (file nodes, structural headings, empty paragraphs)
-- [ ] `tests/fixtures/` — sample tiptap JSON for both formats
-- [ ] `tests/test_schema.py` — all tests pass
-- [ ] `tests/test_parser.py` — all tests pass
+- [x] `shared/schema.py` — knowledge DB schema (calls, chunks, chunks_fts, triggers)
+- [x] `shared/schema.py` — chat history DB schema (sessions, messages)
+- [x] `shared/schema.py` — idempotent creation (safe to call multiple times)
+- [x] `shared/tiptap_parser.py` — Format A parser (h2/h3 headings + paragraphs)
+- [x] `shared/tiptap_parser.py` — Format B parser (bulletList + listItems)
+- [x] `shared/tiptap_parser.py` — topic_heading extraction (bold text / h3 minus timestamp prefix)
+- [x] `shared/tiptap_parser.py` — speakers extraction (JSON array)
+- [x] `shared/tiptap_parser.py` — timestamps extraction (JSON array)
+- [x] `shared/tiptap_parser.py` — skip logic (file nodes, structural headings, empty paragraphs)
+- [x] `tests/fixtures/` — sample tiptap JSON for both formats
+- [x] `tests/test_schema.py` — all tests pass
+- [x] `tests/test_parser.py` — all tests pass
 - [ ] Git commit: "Phase 1: Data foundation — schema and tiptap parser"
 - [ ] **Opus review passed**
 
