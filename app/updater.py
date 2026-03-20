@@ -74,9 +74,11 @@ def get_local_checksum(db_path: str) -> str | None:
 
 def download_db(url: str, dest_path: str, expected_checksum: str) -> bool:
     """
-    Download file from url to dest_path.
+    Download file from url to dest_path atomically.
     Verify SHA256 against expected_checksum.
-    Returns True on success. On checksum mismatch, deletes the file and returns False.
+    Returns True on success, False on checksum mismatch or network error.
+    Uses a temp file + os.replace() so a crash mid-write never leaves a
+    corrupt file at dest_path.
     """
     req = urllib.request.Request(url, headers={"User-Agent": "WealthOps-Updater/1.0"})
     try:
@@ -87,18 +89,21 @@ def download_db(url: str, dest_path: str, expected_checksum: str) -> bool:
 
     actual = hashlib.sha256(data).hexdigest()
     if actual != expected_checksum:
-        # Write then delete to keep the path clean
-        try:
-            with open(dest_path, "wb") as f:
-                f.write(data)
-            os.remove(dest_path)
-        except OSError:
-            pass
         return False
 
     os.makedirs(os.path.dirname(dest_path) or ".", exist_ok=True)
-    with open(dest_path, "wb") as f:
-        f.write(data)
+    tmp_path = dest_path + ".tmp"
+    try:
+        with open(tmp_path, "wb") as f:
+            f.write(data)
+        os.replace(tmp_path, dest_path)
+    except OSError:
+        # Clean up temp file if replace failed
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        return False
     return True
 
 
