@@ -2,13 +2,15 @@
 
 import hashlib
 import os
+import subprocess
 import sys
 
 import pytest
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from pipeline.git_ops import compute_checksum, write_checksums_file
+from pipeline.git_ops import compute_checksum, git_commit_and_push, write_checksums_file
 
 
 # ---------------------------------------------------------------------------
@@ -134,3 +136,70 @@ class TestWriteChecksumsFile:
 
         content = checksums_file.read_text()
         assert "old content" not in content
+
+
+# ---------------------------------------------------------------------------
+# git_commit_and_push
+# ---------------------------------------------------------------------------
+
+def _ok_result():
+    return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+
+
+def _fail_result(stderr="error"):
+    return subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr=stderr)
+
+
+class TestGitCommitAndPush:
+    def test_success_runs_all_three_commands(self):
+        with patch("pipeline.git_ops.subprocess.run", return_value=_ok_result()) as mock_run:
+            git_commit_and_push("Update DB: 3 new recordings")
+
+        assert mock_run.call_count == 3
+        cmds = [call.args[0] for call in mock_run.call_args_list]
+        assert cmds[0][:2] == ["git", "add"]
+        assert cmds[1][:2] == ["git", "commit"]
+        assert cmds[2] == ["git", "push"]
+
+    def test_commit_message_passed_through(self):
+        with patch("pipeline.git_ops.subprocess.run", return_value=_ok_result()) as mock_run:
+            git_commit_and_push("Update DB: 5 new recordings")
+
+        commit_cmd = mock_run.call_args_list[1].args[0]
+        assert commit_cmd == ["git", "commit", "-m", "Update DB: 5 new recordings"]
+
+    def test_git_add_failure_aborts_before_commit(self):
+        with patch("pipeline.git_ops.subprocess.run", return_value=_fail_result("fatal: not a repo")) as mock_run, \
+             pytest.raises(SystemExit):
+            git_commit_and_push("msg")
+
+        # Only git add was attempted
+        assert mock_run.call_count == 1
+
+    def test_git_commit_failure_aborts_before_push(self):
+        side_effects = [_ok_result(), _fail_result("nothing to commit")]
+
+        with patch("pipeline.git_ops.subprocess.run", side_effect=side_effects) as mock_run, \
+             pytest.raises(SystemExit):
+            git_commit_and_push("msg")
+
+        assert mock_run.call_count == 2
+
+    def test_git_push_failure_prints_manual_retry_message(self, capsys):
+        side_effects = [_ok_result(), _ok_result(), _fail_result("connection refused")]
+
+        with patch("pipeline.git_ops.subprocess.run", side_effect=side_effects), \
+             pytest.raises(SystemExit):
+            git_commit_and_push("msg")
+
+        output = capsys.readouterr().out
+        assert "git push" in output.lower()
+        assert "manually" in output.lower()
+
+    def test_git_add_failure_does_not_print_manual_push_message(self, capsys):
+        with patch("pipeline.git_ops.subprocess.run", return_value=_fail_result("fatal")), \
+             pytest.raises(SystemExit):
+            git_commit_and_push("msg")
+
+        output = capsys.readouterr().out
+        assert "manually" not in output.lower()
