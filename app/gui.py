@@ -361,12 +361,16 @@ class WealthOpsApp:
     def _build_chat_view(self) -> None:
         self._chat_frame = tk.Frame(self._content, bg="#f5f5f5")
 
-        # ---- chat display ----
-        display_outer = tk.Frame(self._chat_frame, bg="#f5f5f5")
-        display_outer.pack(fill="both", expand=True)
+        # ---- input area (pack first so it anchors to bottom) ----
+        input_outer = tk.Frame(self._chat_frame, bg="#e0e0e0", pady=8, padx=10)
+        input_outer.pack(fill="x", side="bottom")
+
+        # ---- chat display (expands to fill remaining space above input) ----
+        self._display_outer = tk.Frame(self._chat_frame, bg="#f5f5f5")
+        self._display_outer.pack(fill="both", expand=True)
 
         self._chat_text = tk.Text(
-            display_outer,
+            self._display_outer,
             bg="#f5f5f5",
             fg="#333333",
             font=_font(13),
@@ -381,7 +385,7 @@ class WealthOpsApp:
         )
         self._chat_text.pack(side="left", fill="both", expand=True)
 
-        scroll = ttk.Scrollbar(display_outer, command=self._chat_text.yview)
+        scroll = ttk.Scrollbar(self._display_outer, command=self._chat_text.yview)
         scroll.pack(side="right", fill="y")
         self._chat_text.config(yscrollcommand=scroll.set)
 
@@ -421,13 +425,9 @@ class WealthOpsApp:
         # ---- loading frame ----
         self._loading_frame = tk.Frame(self._chat_frame, bg="#f5f5f5")
 
-        # ---- welcome overlay ----
-        self._welcome_frame = tk.Frame(self._chat_frame, bg="#f5f5f5")
+        # ---- welcome overlay (covers display area only, not input) ----
+        self._welcome_frame = tk.Frame(self._display_outer, bg="#f5f5f5")
         self._build_welcome_content()
-
-        # ---- input area ----
-        input_outer = tk.Frame(self._chat_frame, bg="#e0e0e0", pady=8, padx=10)
-        input_outer.pack(fill="x", side="bottom")
 
         self._input_text = tk.Text(
             input_outer,
@@ -732,7 +732,11 @@ class WealthOpsApp:
         )
         self._help_notice_lbl.pack(fill="x")
 
-        # Chat display
+        # Input area (pack first so it anchors to bottom)
+        inp_outer = tk.Frame(self._help_frame, bg="#e0e0e0", pady=8, padx=10)
+        inp_outer.pack(fill="x", side="bottom")
+
+        # Chat display (expands to fill remaining space above input)
         help_body = tk.Frame(self._help_frame, bg="#f5f5f5")
         help_body.pack(fill="both", expand=True)
 
@@ -762,10 +766,6 @@ class WealthOpsApp:
             "msg", font=_font(13), foreground="#1a1a1a", lmargin1=20, lmargin2=20
         )
         self._help_text.tag_configure("spacer", font=_font(5))
-
-        # Input area
-        inp_outer = tk.Frame(self._help_frame, bg="#e0e0e0", pady=8, padx=10)
-        inp_outer.pack(fill="x", side="bottom")
 
         self._help_input = tk.Text(
             inp_outer,
@@ -823,7 +823,7 @@ class WealthOpsApp:
             self._init_irc()
 
     def _show_welcome(self) -> None:
-        self._welcome_frame.place(in_=self._chat_frame, relwidth=1.0, relheight=1.0)
+        self._welcome_frame.place(in_=self._display_outer, relwidth=1.0, relheight=1.0)
         self._welcome_frame.lift()
 
     def _hide_welcome(self) -> None:
