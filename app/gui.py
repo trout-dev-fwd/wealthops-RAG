@@ -920,6 +920,24 @@ class WealthOpsApp:
         self._chat_text.config(state="disabled")
         self._chat_text.see("end")
 
+    def _typewriter_lines(self, full_text: str, _idx: int = 0) -> None:
+        """Reveal *full_text* line-by-line with a short delay between lines."""
+        lines = full_text.split("\n")
+        if _idx < len(lines):
+            line = lines[_idx]
+            suffix = "\n" if _idx < len(lines) - 1 else ""
+            self._chat_text.config(state="normal")
+            self._chat_text.insert("end", line + suffix, "msg_asst")
+            self._chat_text.config(state="disabled")
+            self._chat_text.see("end")
+            self.root.after(40, self._typewriter_lines, full_text, _idx + 1)
+        else:
+            # Done — save to history and finalize
+            chat_store.add_message(
+                self.chats_db_path, self.session_id, "assistant", full_text
+            )
+            self._finalize_stream()
+
     # ------------------------------------------------------------------
     # Sending messages
     # ------------------------------------------------------------------
@@ -989,14 +1007,8 @@ class WealthOpsApp:
         # Handle discovery / meta-questions without calling Claude
         if retriever.is_discovery_query(query):
             msg = retriever.format_topic_list()
-            self.root.after(
-                0, self._append_bubble, "Assistant", msg, "sender_asst", "msg_asst"
-            )
-            self.root.after(
-                0, chat_store.add_message,
-                self.chats_db_path, self.session_id, "assistant", msg,
-            )
-            self.root.after(0, self._finalize_stream)
+            self.root.after(0, self._start_asst_bubble)
+            self.root.after(0, self._typewriter_lines, msg)
             return
 
         self.root.after(0, self._show_loading, "Searching call recordings…")
