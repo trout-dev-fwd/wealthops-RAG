@@ -223,7 +223,7 @@ def _parse_format_b(nodes, call_title, call_url):
             if not heading:
                 heading = content[:60].rstrip() if content else "Untitled"
 
-            if not content and not heading:
+            if not content:
                 continue
 
             chunks.append({
