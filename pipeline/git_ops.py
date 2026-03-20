@@ -49,4 +49,10 @@ def git_commit_and_push(message: str) -> None:
         )
         if result.returncode != 0:
             print(f"{label} failed:\n{result.stderr.strip()}")
+            if label == "git push":
+                print(
+                    "\nThe database was updated locally but the push to "
+                    "GitHub failed.\nRun 'git push' manually to complete "
+                    "the update."
+                )
             sys.exit(1)
