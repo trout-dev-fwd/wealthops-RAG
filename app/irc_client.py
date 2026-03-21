@@ -7,6 +7,7 @@ in a daemon background thread; auto-reconnect uses exponential backoff.
 
 from __future__ import annotations
 
+import logging
 import ssl
 import threading
 import time
@@ -14,6 +15,13 @@ from typing import Callable
 
 import irc.client
 import irc.connection
+
+log = logging.getLogger("wealthops.irc")
+log.setLevel(logging.DEBUG)
+if not log.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("[IRC] %(message)s"))
+    log.addHandler(_h)
 
 
 class HelpChat:
@@ -71,20 +79,28 @@ class HelpChat:
         Raises ``ConnectionError`` if the connection times out or fails.
         Call this once; the background thread handles subsequent reconnects.
         """
+        log.info("connect() called — %s:%d nick=%s", self.server, self.port, self.nickname)
         self._stop.clear()
         self._connected.clear()
         self._connect_error = None
         self._make_connection()
 
         if not self._connected.wait(timeout=15):
+            log.error("connect() timed out after 15s — welcome never arrived")
             raise ConnectionError("IRC connection timed out")
         if self._connect_error is not None:
+            log.error("connect() failed: %s", self._connect_error)
             raise ConnectionError(str(self._connect_error)) from self._connect_error
+        log.info("connect() succeeded")
 
     def send(self, message: str) -> None:
         """Send *message* to the channel (no-op if not connected)."""
-        if self._conn is not None and self._conn.is_connected():
+        connected = self._conn is not None and self._conn.is_connected()
+        log.debug("send() called — connected=%s, channel=%s", connected, self.channel)
+        if connected:
             self._conn.privmsg(self.channel, message)
+        else:
+            log.warning("send() skipped — not connected")
 
     def disconnect(self) -> None:
         """Stop the auto-reconnect loop and disconnect cleanly."""
@@ -102,6 +118,7 @@ class HelpChat:
 
     def _make_connection(self) -> None:
         """Attempt one TCP+TLS connect; signal _connected on success or failure."""
+        log.info("_make_connection() — attempting TLS to %s:%d", self.server, self.port)
         try:
             ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             ctx.check_hostname = False
@@ -110,7 +127,9 @@ class HelpChat:
             conn = self._reactor.server()
             conn.connect(self.server, self.port, self.nickname, connect_factory=factory)
             self._conn = conn
+            log.info("_make_connection() — socket connect initiated (waiting for welcome)")
         except Exception as exc:
+            log.error("_make_connection() — socket/TLS failed: %r", exc)
             self._connect_error = exc
             self._connected.set()
             return
@@ -128,6 +147,8 @@ class HelpChat:
         connection: irc.client.ServerConnection,
         event: irc.client.Event,
     ) -> None:
+        log.info("_on_welcome fired — server accepted connection")
+        log.info("Joining channel %s", self.channel)
         connection.join(self.channel)
         self._backoff = 1  # reset backoff on successful connect
         self._connect_error = None
@@ -152,8 +173,10 @@ class HelpChat:
         connection: irc.client.ServerConnection,
         event: irc.client.Event,
     ) -> None:
+        log.warning("_on_disconnect fired — lost connection")
         self._conn = None
         if not self._stop.is_set():
+            log.info("Scheduling reconnect in %ds", self._backoff)
             t = threading.Timer(self._backoff, self._reconnect)
             t.daemon = True
             t.start()
