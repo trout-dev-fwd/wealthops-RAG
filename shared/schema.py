@@ -77,11 +77,19 @@ def create_chat_db(db_path):
                 session_id INTEGER NOT NULL REFERENCES sessions(id),
                 role       TEXT NOT NULL,
                 content    TEXT NOT NULL,
+                sources    TEXT,
                 created_at TEXT NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
         """)
+        # Migration: add sources column if missing (existing databases)
+        cols = {
+            row[1]
+            for row in conn.execute("PRAGMA table_info(messages)").fetchall()
+        }
+        if "sources" not in cols:
+            conn.execute("ALTER TABLE messages ADD COLUMN sources TEXT")
         conn.commit()
     finally:
         conn.close()

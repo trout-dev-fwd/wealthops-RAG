@@ -59,6 +59,7 @@ def test_search_returns_correct_fields(test_db):
     assert "call_title" in r
     assert "call_date" in r
     assert "call_url" in r
+    assert "timestamps" in r
 
 
 def test_search_joins_call_metadata(test_db):

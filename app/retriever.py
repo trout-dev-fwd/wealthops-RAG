@@ -42,7 +42,7 @@ def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:
     """
     Search the FTS5 index for chunks matching the query.
     Returns list of dicts with keys: id, topic_heading, content, speakers,
-    call_title, call_date, call_url.
+    call_title, call_date, call_url, timestamps.
     Returns empty list on no matches (never raises on search failure).
     """
     try:
@@ -57,6 +57,7 @@ def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:
                     c.topic_heading,
                     c.content,
                     c.speakers,
+                    c.timestamps,
                     calls.title  AS call_title,
                     calls.published_at AS call_date,
                     calls.url    AS call_url

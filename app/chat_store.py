@@ -27,17 +27,25 @@ def create_session(db_path: str) -> int:
         conn.close()
 
 
-def add_message(db_path: str, session_id: int, role: str, content: str) -> None:
+def add_message(
+    db_path: str,
+    session_id: int,
+    role: str,
+    content: str,
+    sources: str | None = None,
+) -> None:
     """
     Insert a message, update session.last_message_at.
     If this is the first user message, set the session title (truncated to 60 chars).
+    *sources* is an optional JSON string of source references for assistant messages.
     """
     now = _now()
     conn = sqlite3.connect(db_path)
     try:
         conn.execute(
-            "INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-            (session_id, role, content, now),
+            "INSERT INTO messages (session_id, role, content, sources, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (session_id, role, content, sources, now),
         )
         conn.execute(
             "UPDATE sessions SET last_message_at = ? WHERE id = ?",
@@ -65,7 +73,7 @@ def get_session_messages(db_path: str, session_id: int) -> list[dict]:
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(
-            "SELECT id, session_id, role, content, created_at "
+            "SELECT id, session_id, role, content, sources, created_at "
             "FROM messages WHERE session_id = ? ORDER BY id ASC",
             (session_id,),
         ).fetchall()

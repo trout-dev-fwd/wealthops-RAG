@@ -153,3 +153,25 @@ def test_list_sessions_empty_session_has_zero_count(db):
     sessions = list_sessions(db)
     s = next(x for x in sessions if x["id"] == sid)
     assert s["message_count"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Sources storage
+# ---------------------------------------------------------------------------
+
+def test_add_message_with_sources(db):
+    import json
+    sid = create_session(db)
+    sources = json.dumps([{"title": "Jan 16 Call", "url": "https://example.com", "timestamps": ["00:05:02"]}])
+    add_message(db, sid, "assistant", "Here is the answer.", sources=sources)
+    msgs = get_session_messages(db, sid)
+    assert len(msgs) == 1
+    assert msgs[0]["sources"] == sources
+
+
+def test_add_message_without_sources(db):
+    sid = create_session(db)
+    add_message(db, sid, "user", "Hello")
+    msgs = get_session_messages(db, sid)
+    assert len(msgs) == 1
+    assert msgs[0]["sources"] is None
