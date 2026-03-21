@@ -8,14 +8,6 @@ CHATS_DB_PATH = os.path.join(CONFIG_DIR, "chats.db")
 GITHUB_REPO = "trout-dev-fwd/wealthops-RAG"
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
-IRC_DEFAULTS = {
-    "irc_server": "irc.greed.software",
-    "irc_port": 6697,
-    "irc_channel": "#wealthops",
-    "irc_nick": "Barbara",
-    "help_email": "trout.dev.fwd@gmail.com",
-}
-
 
 def load_config() -> dict:
     """Read config.json, creating the directory if missing. Returns empty dict if file missing."""

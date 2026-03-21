@@ -73,9 +73,3 @@ def test_constants_defined():
     assert isinstance(cfg.GITHUB_REPO, str)
 
 
-def test_irc_defaults():
-    import app.config as cfg
-    assert cfg.IRC_DEFAULTS["irc_server"] == "irc.greed.software"
-    assert cfg.IRC_DEFAULTS["irc_port"] == 6697
-    assert cfg.IRC_DEFAULTS["irc_channel"] == "#wealthops"
-    assert cfg.IRC_DEFAULTS["help_email"] == "trout.dev.fwd@gmail.com"

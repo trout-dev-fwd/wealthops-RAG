@@ -35,7 +35,8 @@ NO_RESULTS_MSG = (
 )
 
 _PLACEHOLDER_INPUT = "Ask about the call recordings..."
-_PLACEHOLDER_HELP = "Type a message to Travis..."
+_KIWI_IRC_URL = "https://irc.greed.software/#wealthops"
+_HELP_EMAIL = "trout.dev.fwd@gmail.com"
 
 
 def asset_path(relative_path: str) -> str:
@@ -282,9 +283,6 @@ class WealthOpsApp:
         self._gif_idx_ref: list[int] = [0]
         self._gif_label: tk.Label | None = None
         self._loading_text_var: tk.StringVar | None = None
-
-        # IRC state
-        self._irc_client = None
 
         self._build_ui()
         self._load_gif()
@@ -696,7 +694,7 @@ class WealthOpsApp:
         hdr.pack_propagate(False)
         tk.Label(
             hdr,
-            text="Help — Chat with Travis",
+            text="Help",
             bg="#2c3e50",
             fg="white",
             font=_font(13, "bold"),
@@ -710,97 +708,71 @@ class WealthOpsApp:
             font=_font(12),
             padx=10,
             pady=4,
-            command=self._on_help_back,
+            command=lambda: self._show_view("chat"),
             cursor="hand2",
         ).pack(side="right", padx=8, pady=8)
 
-        # Notice bar
-        self._help_notice = tk.Frame(self._help_frame, bg="#fff9e6")
-        self._help_notice.pack(fill="x")
-        self._help_notice_lbl = tk.Label(
-            self._help_notice,
-            text=(
-                "Travis may not see your message right away. "
-                "He'll respond when he's available."
-            ),
-            bg="#fff9e6",
-            fg="#555500",
-            font=_font(11),
-            wraplength=600,
-            justify="left",
-            anchor="w",
-            padx=16,
-            pady=8,
-        )
-        self._help_notice_lbl.pack(fill="x")
+        # Info panel
+        body = tk.Frame(self._help_frame, bg="#f5f5f5")
+        body.pack(expand=True, fill="both")
 
-        # Input area (pack first so it anchors to bottom)
-        inp_outer = tk.Frame(self._help_frame, bg="#e0e0e0", pady=8, padx=10)
-        inp_outer.pack(fill="x", side="bottom")
+        inner = tk.Frame(body, bg="#f5f5f5")
+        inner.pack(expand=True, pady=40, padx=40)
 
-        # Chat display (expands to fill remaining space above input)
-        help_body = tk.Frame(self._help_frame, bg="#f5f5f5")
-        help_body.pack(fill="both", expand=True)
-
-        self._help_text = tk.Text(
-            help_body,
+        tk.Label(
+            inner,
+            text="Help chat opens in your web browser.",
             bg="#f5f5f5",
-            fg="#333333",
+            fg="#2c3e50",
+            font=_font(14, "bold"),
+            wraplength=500,
+            justify="center",
+        ).pack(pady=(0, 8))
+
+        tk.Label(
+            inner,
+            text="If it didn't open, click the link below:",
+            bg="#f5f5f5",
+            fg="#555555",
             font=_font(13),
-            relief="flat",
-            wrap="word",
-            state="disabled",
-            padx=20,
-            pady=10,
-            spacing1=4,
-            spacing3=4,
-            cursor="arrow",
-        )
-        self._help_text.pack(side="left", fill="both", expand=True)
-        vbar = ttk.Scrollbar(help_body, command=self._help_text.yview)
-        vbar.pack(side="right", fill="y")
-        self._help_text.config(yscrollcommand=vbar.set)
+        ).pack(pady=(0, 12))
 
-        self._help_text.tag_configure(
-            "sender", font=_font(11, "bold"), foreground="#2c3e50"
-        )
-        self._help_text.tag_configure(
-            "msg", font=_font(13), foreground="#1a1a1a", lmargin1=20, lmargin2=20
-        )
-        self._help_text.tag_configure("spacer", font=_font(5))
-
-        self._help_input = tk.Text(
-            inp_outer,
-            height=2,
-            font=_font(13),
-            relief="solid",
-            bd=1,
-            wrap="word",
-            padx=8,
-            pady=6,
-        )
-        self._help_input.pack(side="left", fill="both", expand=True, pady=2)
-        self._help_input.insert("1.0", _PLACEHOLDER_HELP)
-        self._help_input.config(fg="#aaaaaa")
-        self._help_placeholder = True
-        self._help_input.bind("<Return>", self._on_help_enter)
-        self._help_input.bind("<Shift-Return>", lambda e: None)
-        self._help_input.bind("<FocusIn>", self._on_help_focus_in)
-        self._help_input.bind("<FocusOut>", self._on_help_focus_out)
-        self._help_input.bind("<Key>", self._on_help_key)
-
-        tk.Button(
-            inp_outer,
-            text="Send",
-            bg="#2c3e50",
-            fg="white",
-            font=_font(12, "bold"),
-            relief="flat",
-            padx=14,
-            pady=8,
-            command=lambda: self._do_help_send(),
+        url_lbl = tk.Label(
+            inner,
+            text=_KIWI_IRC_URL,
+            bg="#f5f5f5",
+            fg="#2980b9",
+            font=_font(13, "bold"),
             cursor="hand2",
-        ).pack(side="right", padx=(8, 0))
+        )
+        url_lbl.pack(pady=4)
+        url_lbl.bind(
+            "<Button-1>", lambda _e: webbrowser.open(_KIWI_IRC_URL)
+        )
+
+        tk.Label(inner, text="", bg="#f5f5f5").pack(pady=8)
+
+        email_line = tk.Frame(inner, bg="#f5f5f5")
+        email_line.pack()
+        tk.Label(
+            email_line,
+            text="You can also email Travis at ",
+            bg="#f5f5f5",
+            fg="#555555",
+            font=_font(13),
+        ).pack(side="left")
+        email_lbl = tk.Label(
+            email_line,
+            text=_HELP_EMAIL,
+            bg="#f5f5f5",
+            fg="#2980b9",
+            font=_font(13, "bold"),
+            cursor="hand2",
+        )
+        email_lbl.pack(side="left")
+        email_lbl.bind(
+            "<Button-1>", lambda _e: webbrowser.open(f"mailto:{_HELP_EMAIL}")
+        )
 
     # ------------------------------------------------------------------
     # View management
@@ -824,7 +796,7 @@ class WealthOpsApp:
             self._refresh_history()
         elif view == "help":
             self._help_frame.pack(fill="both", expand=True)
-            self._init_irc()
+            webbrowser.open(_KIWI_IRC_URL)
 
     def _show_welcome(self) -> None:
         self._welcome_frame.place(in_=self._display_outer, relwidth=1.0, relheight=1.0)
@@ -1270,131 +1242,6 @@ class WealthOpsApp:
 
     def show_help_view(self) -> None:
         self._show_view("help")
-
-    def _init_irc(self) -> None:
-        if self._irc_client is not None:
-            return
-
-        from app.irc_client import HelpChat
-
-        config = cfg.load_config()
-        server = config.get("irc_server", cfg.IRC_DEFAULTS["irc_server"])
-        port = config.get("irc_port", cfg.IRC_DEFAULTS["irc_port"])
-        channel = config.get("irc_channel", cfg.IRC_DEFAULTS["irc_channel"])
-        nick = config.get("irc_nick", cfg.IRC_DEFAULTS["irc_nick"])
-
-        # Show connecting status immediately
-        self._help_notice_lbl.config(
-            text=f"Connecting to help chat ({server}:{port})...",
-            bg="#fff9e6",
-            fg="#555500",
-        )
-        self._help_notice.config(bg="#fff9e6")
-
-        def on_message(sender: str, message: str) -> None:
-            self.root.after(0, self._append_help_msg, sender, message)
-
-        client = HelpChat(server, port, channel, nick, on_message)
-
-        def worker() -> None:
-            try:
-                client.connect()
-                self._irc_client = client
-                self.root.after(0, self._show_irc_connected)
-            except Exception as exc:
-                import traceback
-                detail = f"{type(exc).__name__}: {exc}"
-                print(f"[IRC] Connection failed to {server}:{port} — {detail}")
-                traceback.print_exc()
-                self.root.after(0, self._show_irc_fallback, detail)
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _show_irc_connected(self) -> None:
-        self._help_notice_lbl.config(
-            text=(
-                "Connected to help chat. Travis may not see your message "
-                "right away — he'll respond when he's available."
-            ),
-            bg="#e6f9e6",
-            fg="#2d6a2d",
-        )
-        self._help_notice.config(bg="#e6f9e6")
-
-    def _show_irc_fallback(self, detail: str = "") -> None:
-        msg = "Can't connect to help chat right now."
-        if detail:
-            msg += f"\n({detail})"
-        self._help_notice_lbl.config(
-            text=msg,
-            bg="#fdecea",
-            fg="#c0392b",
-        )
-        self._help_notice.config(bg="#fdecea")
-
-        link = tk.Label(
-            self._help_notice,
-            text="Email Travis instead",
-            bg="#fdecea",
-            fg="#2980b9",
-            font=_font(11, "bold"),
-            cursor="hand2",
-            anchor="w",
-            padx=16,
-            pady=(0, 8),
-        )
-        link.pack(fill="x")
-        link.bind(
-            "<Button-1>",
-            lambda _e: webbrowser.open("mailto:trout.dev.fwd@gmail.com"),
-        )
-
-        self._help_input.config(state="disabled")
-
-    def _on_help_back(self) -> None:
-        self._show_view("chat")
-
-    def _on_help_enter(self, event: tk.Event) -> str | None:
-        if event.state & 0x1:  # Shift held
-            return None
-        self._do_help_send()
-        return "break"
-
-    def _clear_help_placeholder(self) -> None:
-        if self._help_placeholder:
-            self._help_input.delete("1.0", "end")
-            self._help_input.config(fg="#333333")
-            self._help_placeholder = False
-
-    def _on_help_focus_in(self, _event: tk.Event) -> None:
-        self._clear_help_placeholder()
-
-    def _on_help_focus_out(self, _event: tk.Event) -> None:
-        if not self._help_input.get("1.0", "end-1c").strip():
-            self._help_input.delete("1.0", "end")
-            self._help_input.insert("1.0", _PLACEHOLDER_HELP)
-            self._help_input.config(fg="#aaaaaa")
-            self._help_placeholder = True
-
-    def _on_help_key(self, _event: tk.Event) -> None:
-        self._clear_help_placeholder()
-
-    def _do_help_send(self) -> None:
-        msg = self._help_input.get("1.0", "end-1c").strip()
-        if not msg or msg == _PLACEHOLDER_HELP:
-            return
-        self._help_input.delete("1.0", "end")
-        self._append_help_msg("You", msg)
-        if self._irc_client is not None:
-            self._irc_client.send(msg)
-
-    def _append_help_msg(self, sender: str, message: str) -> None:
-        self._help_text.config(state="normal")
-        self._help_text.insert("end", "\n", "spacer")
-        self._help_text.insert("end", f"{sender}\n", "sender")
-        self._help_text.insert("end", message + "\n", "msg")
-        self._help_text.config(state="disabled")
-        self._help_text.see("end")
 
     # ------------------------------------------------------------------
     # Settings dialog
