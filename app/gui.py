@@ -923,7 +923,7 @@ class WealthOpsApp:
     def _typewriter_words(
         self, full_text: str, words: list[str] | None = None, _idx: int = 0
     ) -> None:
-        """Reveal *full_text* word-by-word at roughly reading pace (~170ms/word)."""
+        """Reveal *full_text* word-by-word (~50ms/word, ~20 words/sec)."""
         if words is None:
             words = full_text.split(" ")
         if _idx < len(words):
@@ -933,7 +933,7 @@ class WealthOpsApp:
             self._chat_text.insert("end", prefix + word, "msg_asst")
             self._chat_text.config(state="disabled")
             self._chat_text.see("end")
-            self.root.after(170, self._typewriter_words, full_text, words, _idx + 1)
+            self.root.after(50, self._typewriter_words, full_text, words, _idx + 1)
         else:
             # Done — save to history and finalize
             chat_store.add_message(
