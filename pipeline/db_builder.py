@@ -46,7 +46,10 @@ def insert_new_posts(db_path: str, new_posts: list) -> int:
             title = post.get("name") or post.get("title") or "Untitled"
             slug = post["slug"]
             published_at = post.get("published_at")
-            post_url = post.get("url", "")
+            post_url = (
+                post.get("url")
+                or f"https://community.wealthops.io/c/call-recordings/{slug}"
+            )
             tiptap_body = post.get("tiptap_body") or {}
 
             cur = conn.execute(

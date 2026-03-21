@@ -166,6 +166,17 @@ class TestInsertNewPosts:
         assert chunks_after_second == 5   # 2 + 3, nothing deleted
         assert calls_count == 2
 
+    def test_url_generated_from_slug_when_missing(self, tmp_path):
+        db_path = str(tmp_path / "test.db")
+        post = _make_post("jan-16-2026")
+        del post["url"]  # simulate Circle API response without url field
+        insert_new_posts(db_path, [post])
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT url FROM calls LIMIT 1").fetchone()
+        conn.close()
+        assert row[0] == "https://community.wealthops.io/c/call-recordings/jan-16-2026"
+
     def test_incremental_skip_workflow(self, tmp_path):
         """Simulate the full pipeline incremental flow: new posts not already in DB."""
         db_path = str(tmp_path / "test.db")
