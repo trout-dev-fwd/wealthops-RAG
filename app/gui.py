@@ -920,17 +920,20 @@ class WealthOpsApp:
         self._chat_text.config(state="disabled")
         self._chat_text.see("end")
 
-    def _typewriter_lines(self, full_text: str, _idx: int = 0) -> None:
-        """Reveal *full_text* line-by-line with a short delay between lines."""
-        lines = full_text.split("\n")
-        if _idx < len(lines):
-            line = lines[_idx]
-            suffix = "\n" if _idx < len(lines) - 1 else ""
+    def _typewriter_words(
+        self, full_text: str, words: list[str] | None = None, _idx: int = 0
+    ) -> None:
+        """Reveal *full_text* word-by-word at roughly reading pace (~170ms/word)."""
+        if words is None:
+            words = full_text.split(" ")
+        if _idx < len(words):
+            word = words[_idx]
+            prefix = " " if _idx > 0 else ""
             self._chat_text.config(state="normal")
-            self._chat_text.insert("end", line + suffix, "msg_asst")
+            self._chat_text.insert("end", prefix + word, "msg_asst")
             self._chat_text.config(state="disabled")
             self._chat_text.see("end")
-            self.root.after(40, self._typewriter_lines, full_text, _idx + 1)
+            self.root.after(170, self._typewriter_words, full_text, words, _idx + 1)
         else:
             # Done — save to history and finalize
             chat_store.add_message(
@@ -1010,23 +1013,8 @@ class WealthOpsApp:
 
         if not chunks:
             self.root.after(0, self._hide_loading)
-            self.root.after(
-                0,
-                self._append_bubble,
-                "Assistant",
-                NO_RESULTS_MSG,
-                "sender_asst",
-                "msg_asst",
-            )
-            self.root.after(
-                0,
-                chat_store.add_message,
-                self.chats_db_path,
-                self.session_id,
-                "assistant",
-                NO_RESULTS_MSG,
-            )
-            self.root.after(0, self._finalize_stream)
+            self.root.after(0, self._start_asst_bubble)
+            self.root.after(0, self._typewriter_words, NO_RESULTS_MSG)
             return
 
         # Context overlap logic
