@@ -1,7 +1,7 @@
 import sqlite3
 import pytest
 
-from app.retriever import sanitize_fts5_query, search_chunks
+from app.retriever import STOP_WORDS, sanitize_fts5_query, search_chunks
 from shared.schema import create_knowledge_db
 
 
@@ -101,8 +101,8 @@ def test_search_returns_empty_on_missing_db(tmp_path):
 # FTS5 query sanitization
 # ---------------------------------------------------------------------------
 
-def test_sanitize_wraps_tokens_in_quotes():
-    assert sanitize_fts5_query("hello world") == '"hello" "world"'
+def test_sanitize_joins_with_or():
+    assert sanitize_fts5_query("hello world") == '"hello" OR "world"'
 
 
 def test_sanitize_preserves_hyphens():
@@ -111,8 +111,8 @@ def test_sanitize_preserves_hyphens():
 
 def test_sanitize_escapes_internal_quotes():
     result = sanitize_fts5_query('the "best" strategy')
-    # Each token is wrapped in quotes; internal quotes are doubled for FTS5 escaping
-    assert result == '"the" """best""" "strategy"'
+    # "the" is a stop word and gets filtered out
+    assert result == '"""best""" OR "strategy"'
 
 
 def test_sanitize_handles_empty_query():
@@ -127,12 +127,40 @@ def test_sanitize_handles_parentheses():
     assert sanitize_fts5_query("(S-Corp)") == '"(S-Corp)"'
 
 
-def test_search_hyphenated_query_returns_results(test_db):
-    """S-Corp must match -- FTS5 would interpret the hyphen as NOT without sanitization."""
-    results = search_chunks(test_db, "S-Corp")
+def test_sanitize_filters_stop_words():
+    result = sanitize_fts5_query("What can you tell me about real estate")
+    assert result == '"real" OR "estate"'
+
+
+def test_sanitize_all_stop_words_returns_empty():
+    result = sanitize_fts5_query("What is this")
+    assert result == '""'
+
+
+def test_sanitize_stop_words_case_insensitive():
+    result = sanitize_fts5_query("THE quick FOX")
+    assert result == '"quick" OR "FOX"'
+
+
+def test_search_multi_word_or_returns_results(test_db):
+    """Multi-word queries should match chunks containing ANY term (OR behavior)."""
+    results = search_chunks(test_db, "real estate investing")
+    assert len(results) >= 1
+    headings = [r["topic_heading"] for r in results]
+    assert "Real Estate Investing" in headings
+
+
+def test_search_hyphenated_query_with_or(test_db):
+    """S-Corp still matches with OR joining."""
+    results = search_chunks(test_db, "S-Corp tax")
     assert len(results) >= 1
     headings = [r["topic_heading"] for r in results]
     assert "S-Corp Formation" in headings
+
+
+def test_search_only_stop_words_returns_empty(test_db):
+    results = search_chunks(test_db, "What is the")
+    assert results == []
 
 
 def test_search_query_with_quotes_does_not_break(test_db):

@@ -1,20 +1,41 @@
 import sqlite3
 
+STOP_WORDS = frozenset({
+    "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
+    "in", "on", "at", "to", "for", "of", "with", "by", "from", "as",
+    "into", "about", "between", "through", "during", "before", "after",
+    "and", "but", "or", "not", "no", "nor", "so", "if", "then",
+    "what", "which", "who", "whom", "this", "that", "these", "those",
+    "how", "when", "where", "why",
+    "can", "could", "should", "would", "will", "shall", "may", "might",
+    "do", "does", "did", "have", "has", "had",
+    "i", "me", "my", "you", "your", "we", "our", "they", "them", "their",
+    "it", "its", "he", "she", "his", "her",
+    "tell", "know", "think", "said", "say",
+})
+
 
 def sanitize_fts5_query(query: str) -> str:
-    """Wrap each whitespace-separated token in double quotes to prevent
-    FTS5 operator interpretation.
+    """Quote tokens, filter stop words, and join with OR for broad matching.
 
     FTS5 treats hyphens as NOT, ``*`` as prefix search, and parentheses /
     AND / OR / NEAR as query operators.  Quoting each token forces literal
     matching — e.g. ``S-Corp`` becomes ``"S-Corp"`` instead of ``S NOT Corp``.
 
-    Internal double quotes are escaped by doubling them per FTS5 rules.
+    Stop words are removed so filler doesn't dilute results.  Tokens are
+    joined with OR so any matching term returns results; FTS5 rank scoring
+    puts chunks matching more terms higher.
+
+    Returns ``""`` (empty quoted string) when all tokens are stop words or
+    the query is empty, which produces zero FTS5 matches.
     """
     tokens = query.split()
     if not tokens:
         return '""'
-    return " ".join(f'"{t.replace(chr(34), chr(34) + chr(34))}"' for t in tokens)
+    filtered = [t for t in tokens if t.lower() not in STOP_WORDS]
+    if not filtered:
+        return '""'
+    return " OR ".join(f'"{t.replace(chr(34), chr(34) + chr(34))}"' for t in filtered)
 
 
 def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:
