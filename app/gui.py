@@ -1245,7 +1245,7 @@ class WealthOpsApp:
                 )
                 card.pack(fill="x", padx=16, pady=3)
 
-                tk.Label(
+                title_lbl = tk.Label(
                     card,
                     text=title,
                     bg="white",
@@ -1255,8 +1255,10 @@ class WealthOpsApp:
                     padx=12,
                     pady=8,
                     wraplength=550,
-                ).pack(fill="x")
-                tk.Label(
+                    cursor="hand2",
+                )
+                title_lbl.pack(fill="x")
+                date_lbl = tk.Label(
                     card,
                     text=f"{date_str} · {count} messages",
                     bg="white",
@@ -1265,16 +1267,18 @@ class WealthOpsApp:
                     anchor="w",
                     padx=12,
                     pady=(0, 8),
-                ).pack(fill="x")
+                    cursor="hand2",
+                )
+                date_lbl.pack(fill="x")
 
                 sid = s["id"]
-                for widget in [card] + card.winfo_children():
-                    widget.bind(
-                        "<Button-1>",
-                        lambda _e, s_id=sid: self._open_history_session(s_id),
-                    )
+                cb = lambda _e, s_id=sid: self._open_history_session(s_id)
+                card.bind("<Button-1>", cb)
+                title_lbl.bind("<Button-1>", cb)
+                date_lbl.bind("<Button-1>", cb)
 
     def _open_history_session(self, session_id: int) -> None:
+        print(f"[History] Opening session {session_id}")
         messages = chat_store.get_session_messages(self.chats_db_path, session_id)
 
         self._detail_text.config(state="normal")
