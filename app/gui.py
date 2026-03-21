@@ -1227,7 +1227,7 @@ class WealthOpsApp:
                 ).pack(fill="x")
 
                 sid = s["id"]
-                for widget in (card,) + card.winfo_children():
+                for widget in [card] + card.winfo_children():
                     widget.bind(
                         "<Button-1>",
                         lambda _e, s_id=sid: self._open_history_session(s_id),
