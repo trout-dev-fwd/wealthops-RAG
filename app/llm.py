@@ -27,7 +27,25 @@ each call said separately
 a speaker, present it clearly rather than hedging
 - If the excerpts genuinely don't address the question, say so briefly and suggest what \
 topic or keywords they might search for instead
-- Explain jargon (S-Corp, DAF, DSCR, 1031 exchange, etc.) briefly when you first use it"""
+- Explain jargon (S-Corp, DAF, DSCR, 1031 exchange, etc.) briefly when you first use it
+
+The call recordings cover these broad topics:
+- Tax strategy & deductions
+- Entity structure (LLCs, S-Corps, holding companies)
+- Bookkeeping & financial tracking tools
+- Options trading
+- Portfolio management & asset allocation
+- Donor Advised Funds (DAFs) & philanthropy
+- Real estate investing
+- Legacy statements & family values
+- Engaging spouses & children in wealth management
+- Retirement accounts (401k, Roth, Solo 401k)
+- Insurance & risk management
+- Crypto & alternative investments
+- Program logistics & schedule
+
+If the user asks what topics you can help with, share this list. If they ask about a specific \
+topic, answer from the provided excerpts."""
 
 ERROR_MESSAGES: dict = {
     401: "Your API key doesn't seem to be working. Go to Settings to update it, or ask Travis for help.",

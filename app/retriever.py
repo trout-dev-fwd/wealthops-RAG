@@ -17,46 +17,6 @@ def sanitize_fts5_query(query: str) -> str:
     return " ".join(f'"{t.replace(chr(34), chr(34) + chr(34))}"' for t in tokens)
 
 
-TOPIC_CATEGORIES = [
-    "Tax strategy & deductions",
-    "Entity structure (LLCs, S-Corps, holding companies)",
-    "Bookkeeping & financial tracking tools",
-    "Options trading",
-    "Portfolio management & asset allocation",
-    "Donor Advised Funds (DAFs) & philanthropy",
-    "Real estate investing",
-    "Legacy statements & family values",
-    "Engaging spouses & children in wealth management",
-    "Retirement accounts (401k, Roth, Solo 401k)",
-    "Insurance & risk management",
-    "Crypto & alternative investments",
-    "Program logistics & schedule",
-]
-
-
-def is_discovery_query(query: str) -> bool:
-    """Return True if the query is a meta-question about available topics."""
-    q = query.lower()
-    if "topic" in q:
-        return True
-    if "what can you" in q or "what do you" in q:
-        return True
-    return False
-
-
-def format_topic_list() -> str:
-    """Return a formatted list of broad topic categories covered in the recordings."""
-    lines = ["Here are the topics covered in the call recordings:\n"]
-    for category in TOPIC_CATEGORIES:
-        lines.append(f"  - {category}")
-    lines.append("")
-    lines.append(
-        "Ask me about any of these — I'll find the relevant discussions "
-        "from your call recordings."
-    )
-    return "\n".join(lines)
-
-
 def search_chunks(db_path: str, query: str, limit: int = 8) -> list[dict]:
     """
     Search the FTS5 index for chunks matching the query.

@@ -1,13 +1,7 @@
 import sqlite3
 import pytest
 
-from app.retriever import (
-    TOPIC_CATEGORIES,
-    format_topic_list,
-    is_discovery_query,
-    sanitize_fts5_query,
-    search_chunks,
-)
+from app.retriever import sanitize_fts5_query, search_chunks
 from shared.schema import create_knowledge_db
 
 
@@ -151,39 +145,3 @@ def test_search_query_with_special_chars_does_not_break(test_db):
     # Parentheses, asterisks, etc. should not cause FTS5 syntax errors
     results = search_chunks(test_db, "tax* (strategies)")
     assert isinstance(results, list)
-
-
-# ---------------------------------------------------------------------------
-# Topic discovery
-# ---------------------------------------------------------------------------
-
-class TestIsDiscoveryQuery:
-    def test_matches_topic_keyword(self):
-        assert is_discovery_query("What topics were discussed?") is True
-
-    def test_matches_what_can_you(self):
-        assert is_discovery_query("What can you tell me about?") is True
-
-    def test_matches_what_do_you(self):
-        assert is_discovery_query("What do you know about?") is True
-
-    def test_no_match_for_normal_query(self):
-        assert is_discovery_query("How does S-Corp taxation work?") is False
-
-    def test_case_insensitive(self):
-        assert is_discovery_query("TOPICS covered") is True
-
-
-class TestFormatTopicList:
-    def test_contains_all_categories(self):
-        output = format_topic_list()
-        for category in TOPIC_CATEGORIES:
-            assert f"- {category}" in output
-
-    def test_contains_header(self):
-        output = format_topic_list()
-        assert "topics covered in the call recordings" in output
-
-    def test_contains_call_to_action(self):
-        output = format_topic_list()
-        assert "Ask me about any of these" in output

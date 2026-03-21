@@ -1004,13 +1004,6 @@ class WealthOpsApp:
         self.stop_event.set()
 
     def _stream_worker(self, query: str) -> None:
-        # Handle discovery / meta-questions without calling Claude
-        if retriever.is_discovery_query(query):
-            msg = retriever.format_topic_list()
-            self.root.after(0, self._start_asst_bubble)
-            self.root.after(0, self._typewriter_lines, msg)
-            return
-
         self.root.after(0, self._show_loading, "Searching call recordings…")
 
         chunks = retriever.search_chunks(self.db_path, query)
