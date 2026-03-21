@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import sys
 import threading
 import webbrowser
@@ -419,6 +420,24 @@ class WealthOpsApp:
             rmargin=20,
         )
         self._chat_text.tag_configure("spacer", font=_font(5))
+        self._chat_text.tag_configure(
+            "md_heading",
+            font=_font(14, "bold"),
+            foreground="#2c3e50",
+            lmargin1=20,
+            lmargin2=20,
+            rmargin=20,
+            spacing1=6,
+            spacing3=2,
+        )
+        self._chat_text.tag_configure(
+            "md_bold",
+            font=_font(13, "bold"),
+            foreground="#1a1a1a",
+            lmargin1=20,
+            lmargin2=20,
+            rmargin=20,
+        )
 
         # ---- loading frame ----
         self._loading_frame = tk.Frame(self._chat_frame, bg="#f5f5f5")
@@ -671,6 +690,24 @@ class WealthOpsApp:
             rmargin=20,
         )
         self._detail_text.tag_configure("spacer", font=_font(5))
+        self._detail_text.tag_configure(
+            "md_heading",
+            font=_font(14, "bold"),
+            foreground="#2c3e50",
+            lmargin1=20,
+            lmargin2=20,
+            rmargin=20,
+            spacing1=6,
+            spacing3=2,
+        )
+        self._detail_text.tag_configure(
+            "md_bold",
+            font=_font(13, "bold"),
+            foreground="#1a1a1a",
+            lmargin1=20,
+            lmargin2=20,
+            rmargin=20,
+        )
 
         notice_frame = tk.Frame(self._history_detail_frame, bg="#fff9e6")
         notice_frame.pack(fill="x", side="bottom")
@@ -877,6 +914,8 @@ class WealthOpsApp:
         self._chat_text.config(state="normal")
         self._chat_text.insert("end", "\n", "spacer")
         self._chat_text.insert("end", "Assistant\n", "sender_asst")
+        self._chat_text.mark_set("_md_start", "end-1c")
+        self._chat_text.mark_gravity("_md_start", "left")
         self._chat_text.config(state="disabled")
         self._chat_text.see("end")
 
@@ -891,6 +930,26 @@ class WealthOpsApp:
         self._chat_text.insert("end", f"\n\n{error_text}", "error_suffix")
         self._chat_text.config(state="disabled")
         self._chat_text.see("end")
+
+    def _insert_markdown(self, text: str, widget: tk.Text | None = None) -> None:
+        """Insert *text* with basic markdown rendering (headings, bold)."""
+        if widget is None:
+            widget = self._chat_text
+        for line in text.split("\n"):
+            # Headings: ## or #
+            if line.startswith("## "):
+                widget.insert("end", line[3:] + "\n", "md_heading")
+            elif line.startswith("# "):
+                widget.insert("end", line[2:] + "\n", "md_heading")
+            else:
+                # Inline **bold** handling
+                parts = re.split(r"(\*\*.+?\*\*)", line)
+                for part in parts:
+                    if part.startswith("**") and part.endswith("**"):
+                        widget.insert("end", part[2:-2], "md_bold")
+                    else:
+                        widget.insert("end", part, "msg_asst")
+                widget.insert("end", "\n", "msg_asst")
 
     def _typewriter_words(
         self, full_text: str, words: list[str] | None = None, _idx: int = 0
@@ -1046,6 +1105,16 @@ class WealthOpsApp:
             self.root.after(0, self._finalize_stream)
 
     def _finish_with_history(self, query: str, response: str) -> None:
+        # Re-render the raw streamed text with markdown formatting
+        self._chat_text.config(state="normal")
+        try:
+            self._chat_text.delete("_md_start", "end-1c")
+            self._insert_markdown(response)
+        except tk.TclError:
+            pass  # mark missing — keep raw text
+        self._chat_text.config(state="disabled")
+        self._chat_text.see("end")
+
         self.conversation_history.append({"role": "user", "content": query})
         self.conversation_history.append({"role": "assistant", "content": response})
         chat_store.add_message(
@@ -1223,7 +1292,7 @@ class WealthOpsApp:
                 self._detail_text.config(state="normal")
                 self._detail_text.insert("end", "\n", "spacer")
                 self._detail_text.insert("end", "Assistant\n", "sender_asst")
-                self._detail_text.insert("end", msg["content"] + "\n", "msg_asst")
+                self._insert_markdown(msg["content"], self._detail_text)
                 self._detail_text.config(state="disabled")
 
         self._detail_text.see("1.0")
