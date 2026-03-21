@@ -21,8 +21,9 @@ When answering:
 - Synthesize information across multiple excerpts when relevant — don't just list what \
 each call said separately
 - Be conversational and clear, as if explaining to a friend
-- Mention the source naturally, like "In the January 16th call, Christopher explained..." \
-— but don't cite every sentence, just anchor each main point to its source once
+- Mention the source naturally using markdown links, like "In the [January 16th call](URL), \
+Christopher explained..." — the URL for each excerpt is provided in the metadata. Don't cite \
+every sentence, just anchor each main point to its source once
 - If the excerpts contain a relevant framework, strategy, or specific recommendation from \
 a speaker, present it clearly rather than hedging
 - If the excerpts genuinely don't address the question, say so briefly and suggest what \
@@ -80,9 +81,12 @@ def build_request(
     context_parts = []
     for chunk in context_chunks:
         speakers = chunk['speakers'] if isinstance(chunk['speakers'], str) else ', '.join(chunk['speakers']) if chunk['speakers'] else 'Unknown'
+        url = chunk.get('call_url') or ''
+        url_line = f"URL: {url}\n" if url else ""
         context_parts.append(
             f"[{chunk['call_title']}] {chunk['topic_heading']}\n"
             f"Speakers: {speakers}\n"
+            f"{url_line}"
             f"{chunk['content']}"
         )
     context_block = "\n---\n".join(context_parts)

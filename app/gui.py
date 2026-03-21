@@ -7,7 +7,6 @@ threads push updates via root.after().
 
 from __future__ import annotations
 
-import json
 import os
 import platform
 import re
@@ -39,36 +38,6 @@ NO_RESULTS_MSG = (
 _PLACEHOLDER_INPUT = "Ask about the call recordings..."
 _KIWI_IRC_URL = "https://irc.greed.software/#wealthops"
 _HELP_EMAIL = "trout.dev.fwd@gmail.com"
-
-
-def _build_sources(chunks: list[dict]) -> list[dict]:
-    """Deduplicate chunks by call and merge timestamps.
-
-    Returns list of ``{"title": str, "url": str, "timestamps": list[str]}``.
-    """
-    seen: dict[str, dict] = {}  # keyed by call_title
-    order: list[str] = []
-    for c in chunks:
-        title = c.get("call_title", "Unknown")
-        if title not in seen:
-            seen[title] = {
-                "title": title,
-                "url": c.get("call_url") or "",
-                "timestamps": [],
-            }
-            order.append(title)
-        raw_ts = c.get("timestamps") or "[]"
-        if isinstance(raw_ts, str):
-            try:
-                ts_list = json.loads(raw_ts)
-            except (json.JSONDecodeError, TypeError):
-                ts_list = []
-        else:
-            ts_list = raw_ts
-        for ts in ts_list:
-            if ts and ts not in seen[title]["timestamps"]:
-                seen[title]["timestamps"].append(ts)
-    return [seen[k] for k in order]
 
 
 def asset_path(relative_path: str) -> str:
@@ -469,27 +438,6 @@ class WealthOpsApp:
             lmargin2=20,
             rmargin=20,
         )
-        self._chat_text.tag_configure(
-            "source_sep",
-            font=_font(8),
-            foreground="#cccccc",
-            lmargin1=20,
-            spacing1=8,
-        )
-        self._chat_text.tag_configure(
-            "source_header",
-            font=_font(11, "bold"),
-            foreground="#888888",
-            lmargin1=20,
-            spacing3=2,
-        )
-        self._chat_text.tag_configure(
-            "source_text",
-            font=_font(11),
-            foreground="#888888",
-            lmargin1=30,
-            lmargin2=30,
-        )
         self._source_tag_counter = 0
 
         # ---- loading frame ----
@@ -761,28 +709,6 @@ class WealthOpsApp:
             lmargin2=20,
             rmargin=20,
         )
-        self._detail_text.tag_configure(
-            "source_sep",
-            font=_font(8),
-            foreground="#cccccc",
-            lmargin1=20,
-            spacing1=8,
-        )
-        self._detail_text.tag_configure(
-            "source_header",
-            font=_font(11, "bold"),
-            foreground="#888888",
-            lmargin1=20,
-            spacing3=2,
-        )
-        self._detail_text.tag_configure(
-            "source_text",
-            font=_font(11),
-            foreground="#888888",
-            lmargin1=30,
-            lmargin2=30,
-        )
-
         notice_frame = tk.Frame(self._history_detail_frame, bg="#fff9e6")
         notice_frame.pack(fill="x", side="bottom")
         tk.Label(
@@ -1006,7 +932,7 @@ class WealthOpsApp:
         self._chat_text.see("end")
 
     def _insert_markdown(self, text: str, widget: tk.Text | None = None) -> None:
-        """Insert *text* with basic markdown rendering (headings, bold)."""
+        """Insert *text* with basic markdown rendering (headings, bold, links)."""
         if widget is None:
             widget = self._chat_text
         for line in text.split("\n"):
@@ -1016,55 +942,46 @@ class WealthOpsApp:
             elif line.startswith("# "):
                 widget.insert("end", line[2:] + "\n", "md_heading")
             else:
-                # Inline **bold** handling
-                parts = re.split(r"(\*\*.+?\*\*)", line)
-                for part in parts:
-                    if part.startswith("**") and part.endswith("**"):
-                        widget.insert("end", part[2:-2], "md_bold")
-                    else:
-                        widget.insert("end", part, "msg_asst")
+                self._insert_inline_markdown(line, widget)
                 widget.insert("end", "\n", "msg_asst")
 
-    def _append_sources(
-        self, sources: list[dict], widget: tk.Text | None = None
-    ) -> None:
-        """Append a clickable sources section below an assistant response."""
-        if not sources:
-            return
-        if widget is None:
-            widget = self._chat_text
-        widget.insert("end", "\n───────────\n", "source_sep")
-        widget.insert("end", "Sources:\n", "source_header")
-        for src in sources:
-            title = src.get("title", "Unknown")
-            url = src.get("url") or ""
-            timestamps = src.get("timestamps") or []
-            ts_str = f" ({', '.join(timestamps)})" if timestamps else ""
-            label = f"• {title}{ts_str}\n"
-            if url:
-                # Create a unique tag for this link
-                self._source_tag_counter += 1
-                tag = f"_src_{self._source_tag_counter}"
-                widget.tag_configure(
-                    tag,
-                    font=_font(11),
-                    foreground="#2980b9",
-                    underline=True,
-                    lmargin1=30,
-                    lmargin2=30,
-                )
-                widget.tag_bind(
-                    tag, "<Button-1>", lambda _e, u=url: webbrowser.open(u)
-                )
-                widget.tag_bind(
-                    tag, "<Enter>", lambda _e, t=tag: widget.config(cursor="hand2")
-                )
-                widget.tag_bind(
-                    tag, "<Leave>", lambda _e, t=tag: widget.config(cursor="")
-                )
-                widget.insert("end", label, tag)
+    def _insert_inline_markdown(self, line: str, widget: tk.Text) -> None:
+        """Render inline markdown: **bold** and [text](url) links."""
+        # Split on bold and link patterns
+        pattern = r"(\*\*.+?\*\*|\[.+?\]\(.+?\))"
+        parts = re.split(pattern, line)
+        for part in parts:
+            if part.startswith("**") and part.endswith("**"):
+                widget.insert("end", part[2:-2], "md_bold")
+            elif part.startswith("[") and "](" in part and part.endswith(")"):
+                m = re.match(r"\[(.+?)\]\((.+?)\)", part)
+                if m:
+                    link_text, url = m.group(1), m.group(2)
+                    self._source_tag_counter += 1
+                    tag = f"_link_{self._source_tag_counter}"
+                    widget.tag_configure(
+                        tag,
+                        font=_font(13),
+                        foreground="#2980b9",
+                        underline=True,
+                        lmargin1=20,
+                        lmargin2=20,
+                        rmargin=20,
+                    )
+                    widget.tag_bind(
+                        tag, "<Button-1>", lambda _e, u=url: webbrowser.open(u)
+                    )
+                    widget.tag_bind(
+                        tag, "<Enter>", lambda _e: widget.config(cursor="hand2")
+                    )
+                    widget.tag_bind(
+                        tag, "<Leave>", lambda _e: widget.config(cursor="")
+                    )
+                    widget.insert("end", link_text, tag)
+                else:
+                    widget.insert("end", part, "msg_asst")
             else:
-                widget.insert("end", label, "source_text")
+                widget.insert("end", part, "msg_asst")
 
     def _typewriter_words(
         self, full_text: str, words: list[str] | None = None, _idx: int = 0
@@ -1213,34 +1130,27 @@ class WealthOpsApp:
 
         full_response = "".join(partial)
         if full_response:
-            sources = _build_sources(chunks)
             self.root.after(
-                0, self._finish_with_history, query, full_response, sources
+                0, self._finish_with_history, query, full_response
             )
         else:
             self.root.after(0, self._finalize_stream)
 
-    def _finish_with_history(
-        self, query: str, response: str, sources: list[dict] | None = None
-    ) -> None:
+    def _finish_with_history(self, query: str, response: str) -> None:
         # Re-render the raw streamed text with markdown formatting
         self._chat_text.config(state="normal")
         try:
             self._chat_text.delete("_md_start", "end-1c")
             self._insert_markdown(response)
-            if sources:
-                self._append_sources(sources)
         except tk.TclError:
             pass  # mark missing — keep raw text
         self._chat_text.config(state="disabled")
         self._chat_text.see("end")
 
-        sources_json = json.dumps(sources) if sources else None
         self.conversation_history.append({"role": "user", "content": query})
         self.conversation_history.append({"role": "assistant", "content": response})
         chat_store.add_message(
-            self.chats_db_path, self.session_id, "assistant", response,
-            sources=sources_json,
+            self.chats_db_path, self.session_id, "assistant", response
         )
         self._finalize_stream()
 
@@ -1419,12 +1329,6 @@ class WealthOpsApp:
                 self._detail_text.insert("end", "\n", "spacer")
                 self._detail_text.insert("end", "Assistant\n", "sender_asst")
                 self._insert_markdown(msg["content"], self._detail_text)
-                if msg.get("sources"):
-                    try:
-                        sources = json.loads(msg["sources"])
-                        self._append_sources(sources, self._detail_text)
-                    except (json.JSONDecodeError, TypeError):
-                        pass
                 self._detail_text.config(state="disabled")
 
         self._detail_text.see("1.0")
