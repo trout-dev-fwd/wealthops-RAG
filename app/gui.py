@@ -278,6 +278,7 @@ class WealthOpsApp:
         self.stop_event = threading.Event()
         self._streaming = False
         self._has_messages = False
+        self._line_buffer = ""  # accumulates tokens for progressive markdown
 
         # GIF animation state
         self._gif_frames: list[tk.PhotoImage] = []
@@ -918,12 +919,52 @@ class WealthOpsApp:
         self._chat_text.mark_gravity("_md_start", "left")
         self._chat_text.config(state="disabled")
         self._chat_text.see("end")
+        self._line_buffer = ""
+        # Mark where the current partial line starts (for re-rendering)
+        self._chat_text.config(state="normal")
+        self._chat_text.mark_set("_line_start", "end-1c")
+        self._chat_text.mark_gravity("_line_start", "left")
+        self._chat_text.config(state="disabled")
 
     def _append_token(self, token: str) -> None:
-        self._chat_text.config(state="normal")
-        self._chat_text.insert("end", token, "msg_asst")
-        self._chat_text.config(state="disabled")
-        self._chat_text.see("end")
+        """Append a streamed token with progressive per-line markdown rendering."""
+        self._line_buffer += token
+        # Check for completed lines
+        while "\n" in self._line_buffer:
+            line, self._line_buffer = self._line_buffer.split("\n", 1)
+            # Delete the raw partial line and replace with formatted version
+            self._chat_text.config(state="normal")
+            try:
+                self._chat_text.delete("_line_start", "end-1c")
+            except tk.TclError:
+                pass
+            self._insert_markdown_line(line)
+            self._chat_text.insert("end", "\n", "msg_asst")
+            # Move line_start mark to current position for next line
+            self._chat_text.mark_set("_line_start", "end-1c")
+            self._chat_text.mark_gravity("_line_start", "left")
+            self._chat_text.config(state="disabled")
+            self._chat_text.see("end")
+        # Show the partial line as raw text (will be re-rendered when line completes)
+        if self._line_buffer:
+            self._chat_text.config(state="normal")
+            try:
+                self._chat_text.delete("_line_start", "end-1c")
+            except tk.TclError:
+                pass
+            self._chat_text.insert("end", self._line_buffer, "msg_asst")
+            self._chat_text.config(state="disabled")
+            self._chat_text.see("end")
+
+    def _insert_markdown_line(self, line: str) -> None:
+        """Render a single completed line with markdown formatting."""
+        widget = self._chat_text
+        if line.startswith("## "):
+            widget.insert("end", line[3:], "md_heading")
+        elif line.startswith("# "):
+            widget.insert("end", line[2:], "md_heading")
+        else:
+            self._insert_inline_markdown(line, widget)
 
     def _append_error_suffix(self, error_text: str) -> None:
         self._chat_text.config(state="normal")
